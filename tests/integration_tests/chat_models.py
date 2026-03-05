@@ -1,4 +1,12 @@
 from __future__ import annotations
+import os
+import rich
+
+# * autoreload changed modules (both `import` and `from` style imports)
+in_nvim_notebook = os.getenv("NVIM")
+if in_nvim_notebook:
+    get_ipython().extension_manager.load_extension("autoreload")  # pyright: ignore
+    get_ipython().run_line_magic('autoreload', 'complete --print')  # pyright: ignore
 
 import rich
 from langchain_core.messages import HumanMessage
@@ -83,4 +91,3 @@ messages = agent.invoke({"messages": [
     HumanMessage("Use the calculator to find the value of 12.42111*124.33434344"),
 ]})
 rich.print(messages)
-
