@@ -34,7 +34,7 @@ class ChatLlamaServer(BaseChatOpenAI):
 
     # make model_name/model and api_key optional b/c llama-server does not require these
     model_name: str = Field(default="", alias="model")
-    openai_api_key: (
+    openai_api_key: ( \
         SecretStr | None | Callable[[], str] | Callable[[], Awaitable[str]] | str
     ) = Field(default="", alias="api_key")
 
@@ -121,4 +121,3 @@ class ChatLlamaServer(BaseChatOpenAI):
             message.__verbose = getattr(chunk, "__verbose")
 
         return generation
-
