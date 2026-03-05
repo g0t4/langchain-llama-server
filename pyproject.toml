@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "langchain-llama-server"
 version = "0.1.0"
@@ -5,9 +9,13 @@ description = "LangChain integrations for llama-server inference"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "ipykernel>=7.2.0",
     "langchain>=1.2.10",
     "langchain-openai>=0.3.35",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.2.0",
     "rich>=14.3.3",
     "yapf>=0.43.0",
 ]

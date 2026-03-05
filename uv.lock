@@ -641,20 +641,28 @@ wheels = [
 [[package]]
 name = "langchain-llama-server"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
-    { name = "ipykernel" },
     { name = "langchain" },
     { name = "langchain-openai" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "ipykernel" },
     { name = "rich" },
     { name = "yapf" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "ipykernel", specifier = ">=7.2.0" },
     { name = "langchain", specifier = ">=1.2.10" },
     { name = "langchain-openai", specifier = ">=0.3.35" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "ipykernel", specifier = ">=7.2.0" },
     { name = "rich", specifier = ">=14.3.3" },
     { name = "yapf", specifier = ">=0.43.0" },
 ]
