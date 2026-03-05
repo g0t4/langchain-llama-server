@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "langchain-llama-server"
-version = "0.1.0"
+version = "0.1.1"
 description = "LangChain integrations for llama-server inference"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -21,7 +21,7 @@ dev = [
 ]
 
 [tool.bumpversion]
-current_version = "0.1.0"
+current_version = "0.1.1"
 commit = true
 tag = true
 
