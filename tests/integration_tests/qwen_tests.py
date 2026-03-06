@@ -27,6 +27,14 @@ model = ChatLlamaServer(
 
 #FYI there is some last ACTUAL chunk emitted from langchain that isn't the last in the SSE stream of chunks... has "last" on it... but prior ACTUAL has stop reason and timings so that's the last one I care about
 
+# %% * non-streaming chat (ensure no thinking)
+
+ai_message = model.invoke("what is your name?", store=True)
+rich.print(ai_message)
+assert ai_message.additional_kwargs["reasoning_content"] is None
+assert "Qwen3.5-35B-A3B" in ai_message.response_metadata["model_name"]
+assert ai_message.verbose
+
 # %% * streaming chat
 
 stream_chunks = model.stream("what is your name?")
@@ -42,12 +50,3 @@ for chunk in stream_chunks:
 
 print_indented(net, level=2)
 assert "Qwen3.5-35B-A3B" in net.response_metadata["model_name"]
-
-# %% * non-streaming chat
-
-ai_message = model.invoke("what is your name?", store=True)
-rich.print(ai_message)
-# assert ai_message.additional_kwargs["reasoning_content"] is not None
-assert "Qwen3.5-35B-A3B" in ai_message.response_metadata["model_name"]
-assert ai_message.verbose
-
