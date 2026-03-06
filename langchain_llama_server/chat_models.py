@@ -72,12 +72,12 @@ class ChatLlamaServer(BaseChatOpenAI):
         else:
             raise ValueError(f"Unexpected response format in ChatLlamaServer._create_chat_result: {type(response)}")
 
-        # TODO where to put timings?
+        # out_message is the message returned by invoke/stream/etc
         if hasattr(response, "timings"):
-            out_message.timings = getattr(response, "timings")
-        # TODO where to put __verbose?
+            setattr(out_message, "timings", getattr(response, "timings"))
         if hasattr(response, "__verbose"):
-            out_message.__verbose = getattr(response, "__verbose")
+            # using verbose instead of __verbose b/c rich.print won't print __verbose... though maybe that is desirable?
+            setattr(out_message, "verbose", getattr(response, "__verbose"))
 
         if self.troubleshootme:
             print_indented("out_message")

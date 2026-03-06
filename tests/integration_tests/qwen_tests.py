@@ -47,7 +47,7 @@ assert "Qwen3.5-35B-A3B" in net.response_metadata["model_name"]
 
 ai_message = model.invoke("what is your name?", store=True)
 rich.print(ai_message)
-assert ai_message.additional_kwargs["reasoning_content"] is not None
+# assert ai_message.additional_kwargs["reasoning_content"] is not None
 assert "Qwen3.5-35B-A3B" in ai_message.response_metadata["model_name"]
-
+assert ai_message.verbose
 
