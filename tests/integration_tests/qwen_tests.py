@@ -20,6 +20,9 @@ model = ChatLlamaServer(
     model="",
     base_url="http://build21.lan:8012",
     # debugme=True,
+    extra_body={"chat_template_kwargs": {
+        "enable_thinking": False
+    }},
 )
 
 #FYI there is some last ACTUAL chunk emitted from langchain that isn't the last in the SSE stream of chunks... has "last" on it... but prior ACTUAL has stop reason and timings so that's the last one I care about
