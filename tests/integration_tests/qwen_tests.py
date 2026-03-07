@@ -34,11 +34,6 @@ rich.print(ai_message)
 assert not "reasoning_content" in ai_message.additional_kwargs
 assert "Qwen3.5-35B-A3B" in ai_message.response_metadata["model_name"]
 
-
-# TODO break out separate verbose tests:
-assert hasattr(ai_message, "verbose") # must have --verbose on llama-server to get this to work
-# TODO what is the endpoint for getting the args to llama-server to verify if --verbose is set and warn if not?
-
 # %% * streaming chat
 
 stream_chunks = model.stream("what is your name?")
