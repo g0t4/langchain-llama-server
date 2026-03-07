@@ -113,11 +113,15 @@ class ChatLlamaServer(BaseChatOpenAI):
             if delta and "reasoning_content" in delta:
                 message.additional_kwargs["reasoning_content"] = delta["reasoning_content"]
 
-        # TODO where to put timings?
-        if hasattr(chunk, "timings"):
-            message.timings = getattr(chunk, "timings")
-        # TODO where to put __verbose?
-        if hasattr(chunk, "__verbose"):
-            message.__verbose = getattr(chunk, "__verbose")
+        # TODO if chunk is not a dict? like above for non-streaming?
+
+        if "timings" in chunk:
+            message.timings = chunk["timings"]
+        if "__verbose" in chunk:
+            message.verbose = chunk["__verbose"]
+
+        # TODO can I hold over timings and __verbose for the last chunk too (or instead of the last SSE's chunk which is second to last chunk)? (has reasoning_content, content and full message)
+        #   chunk_position="last"
+        #   comes after all SSEs arrived
 
         return generation

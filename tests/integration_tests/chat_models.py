@@ -9,7 +9,7 @@ if in_nvim_notebook:
     get_ipython().run_line_magic('autoreload', 'complete --print')  # pyright: ignore
 
 import rich
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel
 
@@ -18,7 +18,7 @@ from langchain_llama_server.chat_models import ChatLlamaServer, print_indented
 model = ChatLlamaServer(
     api_key="",
     model="",
-    base_url="http://build21.lan:8013",
+    base_url="http://build21.lan:8012",
     # debugme=True,
 )
 
@@ -42,14 +42,12 @@ assert "Qwen3.5-35B-A3B" in net.response_metadata["model_name"]
 
 # %% * non-streaming chat
 
-ai_message = model.invoke("what is your name?", store=True)
+ai_message = model.invoke("what is your name?")
 rich.print(ai_message)
 assert ai_message.additional_kwargs["reasoning_content"] is not None
 assert "Qwen3.5-35B-A3B" in ai_message.response_metadata["model_name"]
 
 # %% * streaming non-reasoning
-
-# run qwen2.5coder on 8012
 
 model_nonreasoning = ChatLlamaServer(
     api_key="",
@@ -57,7 +55,15 @@ model_nonreasoning = ChatLlamaServer(
     base_url="http://build21.lan:8012",
     # debugme=True,
 )
-stream_chunks = model_nonreasoning.stream("what is your name?", max_tokens=20)
+stream_chunks = model_nonreasoning.stream(
+    "what is your name?",
+    max_tokens=20,
+    extra_body={
+        "chat_template_kwargs": {
+            "enable_thinking": False,
+        },
+    },
+)
 net = None
 for chunk in stream_chunks:
     if net is None:
@@ -68,13 +74,22 @@ for chunk in stream_chunks:
     print_indented("ACTUAL:")
     print_indented(chunk, level=2)
 print_indented(net, level=2)
-assert "Qwen2.5-Coder" in net.response_metadata["model_name"]
+assert "Qwen3.5" in net.response_metadata["model_name"]
+assert "reasoning_content" not in net.additional_kwargs
 
 # %% * non-streaming non-reasoning
 
-net = model_nonreasoning.invoke("what is your name?", store=True, max_tokens=20)
+net = model_nonreasoning.invoke(
+    "what is your name?",
+    max_tokens=20,
+    extra_body={
+        "chat_template_kwargs": {
+            "enable_thinking": False,
+        },
+    },
+)
 rich.print(net)
-assert "Qwen2.5-Coder" in net.response_metadata["model_name"]
+assert "Qwen3.5" in net.response_metadata["model_name"]
 
 # %% * agent w/ python tool function
 
@@ -91,3 +106,9 @@ messages = agent.invoke({"messages": [
     HumanMessage("Use the calculator to find the value of 12.42111*124.33434344"),
 ]})
 rich.print(messages)
+message_one = messages['messages'][1]
+assert isinstance(message_one, AIMessage)
+assert len(message_one.tool_calls) == 1
+tool_call = message_one.tool_calls[0]
+assert tool_call['name'] == "calculator"
+assert isinstance(messages['messages'][2], ToolMessage)

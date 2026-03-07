@@ -19,7 +19,7 @@ model = ChatLlamaServer(
     api_key="",
     model="",
     base_url="http://build21.lan:8012",
-    # debugme=True,
+    debugme=True,
     extra_body={"chat_template_kwargs": {
         "enable_thinking": False
     }},
@@ -30,9 +30,28 @@ model = ChatLlamaServer(
 ai_message = model.invoke(
     "what is your name?",
     max_tokens=1,
-    store=True,
+    extra_body={
+        # setting verbose ensures __verbose is returned
+        "verbose": True,
+    },
 )
 rich.print(ai_message)
 assert hasattr(ai_message, "verbose")  # must have --verbose on llama-server to get this to work
 
 # %% * streaming sets __verbose
+
+finish_chunk = None
+for chunk in model.stream(
+        "what is your name?",
+        max_tokens=1,
+        extra_body={
+            # setting verbose ensures __verbose is returned
+            "verbose": True,
+        },
+):
+    if "finish_reason" in chunk.response_metadata is not None:
+        finish_chunk = chunk
+
+rich.print(finish_chunk)
+assert finish_chunk is not None
+assert finish_chunk.verbose is not None

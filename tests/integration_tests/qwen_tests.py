@@ -29,7 +29,7 @@ model = ChatLlamaServer(
 
 # %% * non-streaming chat (ensure no thinking)
 
-ai_message = model.invoke("what is your name?", store=True)
+ai_message = model.invoke("what is your name?")
 rich.print(ai_message)
 assert not "reasoning_content" in ai_message.additional_kwargs
 assert "Qwen3.5-35B-A3B" in ai_message.response_metadata["model_name"]
