@@ -40,7 +40,7 @@ assert hasattr(ai_message, "verbose")  # must have --verbose on llama-server to 
 
 # %% * streaming sets __verbose
 
-finish_chunk = None
+last_sses_chunk = None
 for chunk in model.stream(
         "what is your name?",
         max_tokens=1,
@@ -50,8 +50,13 @@ for chunk in model.stream(
         },
 ):
     if "finish_reason" in chunk.response_metadata is not None:
-        finish_chunk = chunk
+        last_sses_chunk = chunk
 
-rich.print(finish_chunk)
-assert finish_chunk is not None
-assert finish_chunk.verbose is not None
+rich.print(last_sses_chunk)
+assert last_sses_chunk is not None
+assert last_sses_chunk.verbose is not None
+assert last_sses_chunk.timings is not None
+# FYI just leave as is on last SSE's chunk only is fine for now
+#   this is not on the last chunk though which comes after last SSE
+#   that is fine, I can capture it from second to last SSE's chunk
+#   PRN I could also extend the chunk type to copy over verbose/timings when I do (net += chunk) in add operation overload
