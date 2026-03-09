@@ -34,6 +34,13 @@ class ChatLlamaServer(BaseChatOpenAI):
 
     # make model_name/model and api_key optional b/c llama-server does not require these
     model_name: str = Field(default="", alias="model")
+
+    # * ONLY make pyright think `api_key=""` is allowed
+    #   STOP IT WES
+    #   DO NOT MAKE THIS DO ANYTHING ELSE, NOT WORTH IT, NO TIME
+    # FYI this only allows you to set "" empty string an not have pyright complain
+    #   w/o this pyright will put red squigglies under the api_key="" when using ChatLlamaServer(api_key="")
+    #   PRN could rip out some/all of BaseChatOpenAI so I don't have to even set api_key which currently in validate_environment flips out if its empty
     openai_api_key: ( \
         SecretStr | None | Callable[[], str] | Callable[[], Awaitable[str]] | str
     ) = Field(default="", alias="api_key")
