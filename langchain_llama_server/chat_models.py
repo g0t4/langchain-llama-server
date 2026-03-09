@@ -32,8 +32,9 @@ def print_indented(obj, level: int = 1):
 
 class ChatLlamaServer(BaseChatOpenAI):
 
-    # make model_name/model and api_key optional b/c llama-server does not require these
-    model_name: str = Field(default="", alias="model")
+    # LEAVE as reminder I don't need this right now:
+    # make model_name/model optional... actually it already is optional on BaseChatOpenAI:
+    # model_name: str = Field(default="", alias="model")
 
     # * ONLY make pyright think `api_key=""` is allowed
     #   STOP IT WES
