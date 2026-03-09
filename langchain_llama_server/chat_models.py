@@ -46,6 +46,7 @@ class ChatLlamaServer(BaseChatOpenAI):
         SecretStr | None | Callable[[], str] | Callable[[], Awaitable[str]] | str
     ) = Field(default="", alias="api_key")
 
+    # dump raw messages (i.e. raw SSE)
     troubleshootme: bool = Field(default=False, alias="debugme")
 
     # hide things like timings
