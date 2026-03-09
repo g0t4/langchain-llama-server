@@ -19,6 +19,7 @@ model = ChatLlamaServer(
     api_key="",
     model="",
     base_url="http://build21.lan:8012",
+    # quiet=True,
     # debugme=True,
 )
 

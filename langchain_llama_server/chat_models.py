@@ -48,6 +48,11 @@ class ChatLlamaServer(BaseChatOpenAI):
 
     troubleshootme: bool = Field(default=False, alias="debugme")
 
+    # hide things like timings
+    # probably best to summarize (summary() tool) what you print about messages
+    #   quiet suppresses some extra fields on AIMessage[Chunk]s ... largely added to make the messages printable in a list :)
+    quiet: bool = Field(default=False)
+
     def _create_chat_result(
         self,
         response: dict | openai.BaseModel,
@@ -81,9 +86,9 @@ class ChatLlamaServer(BaseChatOpenAI):
             raise ValueError(f"Unexpected response format in ChatLlamaServer._create_chat_result: {type(response)}")
 
         # out_message is the message returned by invoke/stream/etc
-        if hasattr(response, "timings"):
+        if hasattr(response, "timings") and not self.quiet:
             setattr(out_message, "timings", getattr(response, "timings"))
-        if hasattr(response, "__verbose"):
+        if hasattr(response, "__verbose") and not self.quiet:
             # using verbose instead of __verbose b/c rich.print won't print __verbose... though maybe that is desirable?
             setattr(out_message, "verbose", getattr(response, "__verbose"))
 
@@ -123,12 +128,12 @@ class ChatLlamaServer(BaseChatOpenAI):
 
         # TODO if chunk is not a dict? like above for non-streaming?
 
-        if "timings" in chunk:
+        if "timings" in chunk and not self.quiet:
             message.timings = chunk["timings"]
-        if "__verbose" in chunk:
+        if "__verbose" in chunk and not self.quiet:
             message.verbose = chunk["__verbose"]
 
-        # TODO can I hold over timings and __verbose for the last chunk too (or instead of the last SSE's chunk which is second to last chunk)? (has reasoning_content, content and full message)
+        # PRN ? hold over timings and __verbose for the last chunk too (or instead of the last SSE's chunk which is second to last chunk)? (has reasoning_content, content and full message)
         #   chunk_position="last"
         #   comes after all SSEs arrived
 
