@@ -18,7 +18,7 @@ from langchain_llama_server.chat_models import ChatLlamaServer, print_indented
 model = ChatLlamaServer(
     api_key="",
     model="",
-    base_url="http://build21.lan:8012",
+    base_url="http://ask.lan:8012",
     debugme=True,
     extra_body={"chat_template_kwargs": {
         "enable_thinking": False

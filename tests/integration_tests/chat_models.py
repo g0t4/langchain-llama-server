@@ -18,7 +18,7 @@ from langchain_llama_server.chat_models import ChatLlamaServer, print_indented
 model = ChatLlamaServer(
     api_key="",
     model="",
-    base_url="http://build21.lan:8012",
+    base_url="http://ask.lan:8012",
     # quiet=True,
     # debugme=True,
 )
@@ -53,7 +53,7 @@ assert "Qwen3.5-35B-A3B" in ai_message.response_metadata["model_name"]
 model_nonreasoning = ChatLlamaServer(
     api_key="",
     model="",
-    base_url="http://build21.lan:8012",
+    base_url="http://ask.lan:8012",
     # debugme=True,
 )
 stream_chunks = model_nonreasoning.stream(
