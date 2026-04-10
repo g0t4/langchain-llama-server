@@ -76,12 +76,12 @@ class ChatLlamaServer(BaseChatOpenAI):
 
         if self.troubleshootme:
             import rich
-            rich.print("[bold gray0 on blue]SINGLE")
-            print_indented("response")
+            rich.print("[bold gray0 on blue]WHOLE")
+            print_indented("INPUT RESPONSE")
             print_indented(response, level=2)
-            print_indented("generation_info")
+            print_indented("INPUT GENERATION_INFO")
             print_indented(generation_info, level=2)  # None so far
-            print_indented("chat_result")
+            print_indented("SUPER CHAT_RESULT")
             print_indented(chat_result, level=2)
 
         out_message = chat_result.generations[0].message
@@ -107,10 +107,6 @@ class ChatLlamaServer(BaseChatOpenAI):
         if not self.quiet and (debug_info.timings or debug_info.verbose):
             out_message.debug = debug_info
 
-        if self.troubleshootme:
-            print_indented("out_message")
-            print_indented(out_message, level=2)
-
         return chat_result
 
     def _convert_chunk_to_generation_chunk(
@@ -124,9 +120,9 @@ class ChatLlamaServer(BaseChatOpenAI):
         if self.troubleshootme:
             import rich
             rich.print("[bold gray0 on blue]CHUNK")
-            print_indented("raw_chunk")
+            print_indented("INPUT CHUNK")
             print_indented(chunk, level=2)
-            print_indented("generation")
+            print_indented("INPUT GENERATION")
             print_indented(generation, level=2)
 
         if generation is None or generation.message is None:
