@@ -20,9 +20,11 @@ model = ChatLlamaServer(
     model="",
     base_url="http://ask.lan:8012",
     debugme=True,
-    extra_body={"chat_template_kwargs": {
-        "enable_thinking": False # for qwen3.5 testing
-    }},
+    extra_body={
+        "chat_template_kwargs": {
+            "enable_thinking": False  # for qwen3.5 testing
+        }
+    },
 )
 
 # %% * non-streaming chat copies __verbose
