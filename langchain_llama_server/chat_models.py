@@ -100,15 +100,11 @@ class ChatLlamaServer(BaseChatOpenAI):
             raise ValueError(f"Unexpected response format in ChatLlamaServer._create_chat_result: {type(response)}")
 
         # copy debug info using DebugInfo dataclass
-        debug_info = DebugInfo()
-        has_debug = False
-        if hasattr(response, "timings"):
-            has_debug = True
-            debug_info.timings = getattr(response, "timings")
-        if hasattr(response, "__verbose"):
-            has_debug = True
-            debug_info.verbose = getattr(response, "__verbose")
-        if has_debug and not self.quiet:
+        debug_info = DebugInfo(
+            timings=getattr(response, "timings", None),
+            verbose=getattr(response, "__verbose", None),
+        )
+        if not self.quiet and (debug_info.timings or debug_info.verbose):
             out_message.debug = debug_info
 
         if self.troubleshootme:
