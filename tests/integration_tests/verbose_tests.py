@@ -37,6 +37,7 @@ ai_message = model.invoke(
 )
 rich.print(ai_message)
 assert hasattr(ai_message, "verbose")  # must have --verbose on llama-server to get this to work
+assert hasattr(ai_message, "timings")
 
 # %% * streaming sets __verbose
 
