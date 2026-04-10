@@ -141,16 +141,12 @@ class ChatLlamaServer(BaseChatOpenAI):
             if delta and "reasoning_content" in delta:
                 message.additional_kwargs["reasoning_content"] = delta["reasoning_content"]
 
-        # copy debug info using DebugInfo dataclass
-        debug_info = DebugInfo()
-        has_debug = False
-        if "timings" in chunk and not self.quiet:
-            has_debug = True
-            debug_info.timings = chunk.get("timings")
-        if "__verbose" in chunk and not self.quiet:
-            has_debug = True
-            debug_info.verbose = chunk.get("__verbose")
-        if has_debug and not self.quiet:
+        # copy debug info using DebugInfo dataclass (simplified)
+        debug_info = DebugInfo(
+            timings=chunk.get("timings"),
+            verbose=chunk.get("__verbose"),
+        )
+        if not self.quiet and (debug_info.timings or debug_info.verbose):
             message.debug = debug_info
 
         # PRN ? hold over timings and __verbose for the last chunk too (or instead of the last SSE's chunk which is second to last chunk)? (has reasoning_content, content and full message)
