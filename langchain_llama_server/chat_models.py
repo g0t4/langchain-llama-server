@@ -122,7 +122,11 @@ class ChatLlamaServer(BaseChatOpenAI):
             rich.print("[bold gray0 on blue]CHUNK")
             print_indented("[bold gray0 on light_steel_blue]INPUT CHUNK")
             print_indented(chunk, level=2)
-            print_indented("[bold gray0 on light_steel_blue]INPUT GENERATION")
+            print_indented("[bold gray0 on light_steel_blue]INPUT default_chunk_class")
+            print_indented(default_chunk_class, level=2)
+            print_indented("[bold gray0 on light_steel_blue]INPUT base_generation_info")
+            print_indented(base_generation_info, level=2)
+            print_indented("[bold gray0 on light_steel_blue]SUPER GENERATION")
             print_indented(generation, level=2)
 
         if generation is None or generation.message is None:
