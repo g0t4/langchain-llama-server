@@ -4,6 +4,7 @@ from pydantic import Field, SecretStr
 from langchain_core.outputs import ChatGenerationChunk, ChatResult
 from langchain_openai.chat_models.base import BaseChatOpenAI
 from openai.types.chat import ChatCompletion
+from types import SimpleNamespace
 
 # NOTES:
 #
@@ -31,6 +32,11 @@ def print_indented(obj, level: int = 1):
     rich.print(Padding(what, (0, 0, 0, 4 * level)))
 
 class ChatLlamaServer(BaseChatOpenAI):
+    """ Connect to a remote llama-server instance
+    debug info shows when either:
+    1. llama-server --verbose
+    2. per request set verbose=True on extra_body
+    """
 
     # LEAVE as reminder I don't need this right now:
     # make model_name/model optional... actually it already is optional on BaseChatOpenAI:
@@ -86,12 +92,19 @@ class ChatLlamaServer(BaseChatOpenAI):
         else:
             raise ValueError(f"Unexpected response format in ChatLlamaServer._create_chat_result: {type(response)}")
 
-        # out_message is the message returned by invoke/stream/etc
-        if hasattr(response, "timings") and not self.quiet:
-            setattr(out_message, "timings", getattr(response, "timings"))
-        if hasattr(response, "__verbose") and not self.quiet:
+        # * copy debug info
+        debug = SimpleNamespace()
+        has_debug = False
+        if hasattr(response, "timings"):
+            has_debug = True
+            setattr(debug, "timings", getattr(response, "timings"))
+        if hasattr(response, "__verbose"):
+            has_debug = True
             # using verbose instead of __verbose b/c rich.print won't print __verbose... though maybe that is desirable?
-            setattr(out_message, "verbose", getattr(response, "__verbose"))
+            setattr(debug, "verbose", getattr(response, "__verbose"))
+        if has_debug and not self.quiet:
+            # out_message is the message returned by invoke/stream/etc
+            out_message.debug = debug
 
         if self.troubleshootme:
             print_indented("out_message")
@@ -127,12 +140,17 @@ class ChatLlamaServer(BaseChatOpenAI):
             if delta and "reasoning_content" in delta:
                 message.additional_kwargs["reasoning_content"] = delta["reasoning_content"]
 
-        # TODO if chunk is not a dict? like above for non-streaming?
-
+        # * copy debug info
+        debug = SimpleNamespace()
+        has_debug = False
         if "timings" in chunk and not self.quiet:
-            message.timings = chunk["timings"]
+            has_debug = True
+            debug.timings = chunk.get("timings")
         if "__verbose" in chunk and not self.quiet:
-            message.verbose = chunk["__verbose"]
+            has_debug = True
+            debug.verbose = chunk.get("__verbose")
+        if has_debug and not self.quiet:
+            message.debug = debug
 
         # PRN ? hold over timings and __verbose for the last chunk too (or instead of the last SSE's chunk which is second to last chunk)? (has reasoning_content, content and full message)
         #   chunk_position="last"

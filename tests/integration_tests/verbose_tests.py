@@ -37,9 +37,13 @@ ai_message = model.invoke(
         "verbose": True,
     },
 )
+# must have --verbose on llama-server to get this to work, or pass verbose in extra_body (above)
 rich.print(ai_message)
-assert hasattr(ai_message, "verbose")  # must have --verbose on llama-server to get this to work
-assert hasattr(ai_message, "timings")
+assert ai_message is not None
+debug = ai_message.debug
+assert debug is not None
+assert debug.verbose is not None
+assert debug.timings is not None
 
 # %% * streaming sets __verbose
 
@@ -57,8 +61,10 @@ for chunk in model.stream(
 
 rich.print(last_sses_chunk)
 assert last_sses_chunk is not None
-assert last_sses_chunk.verbose is not None
-assert last_sses_chunk.timings is not None
+debug = last_sses_chunk.debug
+assert debug is not None
+assert debug.verbose is not None
+assert debug.timings is not None
 # FYI just leave as is on last SSE's chunk only is fine for now
 #   this is not on the last chunk though which comes after last SSE
 #   that is fine, I can capture it from second to last SSE's chunk
