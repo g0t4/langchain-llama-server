@@ -43,6 +43,8 @@ class ChatLlamaServer(BaseChatOpenAI):
     debug info shows when either:
     1. llama-server --verbose
     2. per request set verbose=True on extra_body
+
+    YOU MUST SET api_key="" (do not use None and do not leve it unset)
     """
 
     # LEAVE as reminder I don't need this right now:
@@ -52,9 +54,13 @@ class ChatLlamaServer(BaseChatOpenAI):
     # * ONLY make pyright think `api_key=""` is allowed
     #   STOP IT WES
     #   DO NOT MAKE THIS DO ANYTHING ELSE, NOT WORTH IT, NO TIME
-    # FYI this only allows you to set "" empty string an not have pyright complain
+    # FYI this only allows you to set "" empty string and not have pyright complain
     #   w/o this pyright will put red squigglies under the api_key="" when using ChatLlamaServer(api_key="")
     #   PRN could rip out some/all of BaseChatOpenAI so I don't have to even set api_key which currently in validate_environment flips out if its empty
+    # TODO find a way to set default value of api_key to an empty string "" in here so consumers don't have to... IIRC there's an issue with BaseChatOpenAI that caused that to fall apart
+    # TODO also change None => "" if consumers don't set it? or set it to None?
+    # TODO update docstring above if I get api_key default fixed
+    # TODO ask Qwen to look into this for me, Qwen had a half way decent suggestion that I tossed b/c it's just easier for the change I was then working on to pass api_key=""
     openai_api_key: ( \
         SecretStr | None | Callable[[], str] | Callable[[], Awaitable[str]] | str
     ) = Field(default="", alias="api_key")
