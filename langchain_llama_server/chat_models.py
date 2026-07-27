@@ -1,4 +1,4 @@
-from typing import Awaitable, Callable
+from typing import Awaitable, Callable, List
 import openai
 from pydantic import Field, SecretStr
 from langchain_core.outputs import ChatGenerationChunk, ChatResult
@@ -73,6 +73,20 @@ class ChatLlamaServer(BaseChatOpenAI):
     #   quiet suppresses some extra fields on AIMessage[Chunk]s ... largely added to make the messages printable in a list :)
     quiet: bool = Field(default=False)
 
+    # track chunks for testing purposes
+    track_chunks: bool = Field(default=False)
+
+    # class-level storage for tracked chunks (reset between calls)
+    _tracked_chunks: List[dict] = []
+
+    def get_tracked_chunks(self) -> List[dict]:
+        """Get all tracked chunks from the last streaming call."""
+        return self._tracked_chunks.copy()
+
+    def clear_tracked_chunks(self) -> None:
+        """Clear all tracked chunks."""
+        self._tracked_chunks.clear()
+
     def _create_chat_result(
         self,
         response: dict | openai.BaseModel,
@@ -112,6 +126,10 @@ class ChatLlamaServer(BaseChatOpenAI):
         )
         if not self.quiet and (debug_info.timings or debug_info.verbose):
             out_message.debug = debug_info
+
+        # Track full response if enabled
+        if self.track_chunks:
+            self._tracked_chunks.append(dict(response))
 
         return chat_result
 
@@ -162,5 +180,9 @@ class ChatLlamaServer(BaseChatOpenAI):
         # PRN ? hold over timings and __verbose for the last chunk too (or instead of the last SSE's chunk which is second to last chunk)? (has reasoning_content, content and full message)
         #   chunk_position="last"
         #   comes after all SSEs arrived
+
+        # Track chunk if enabled
+        if self.track_chunks:
+            self._tracked_chunks.append(chunk)
 
         return generation
