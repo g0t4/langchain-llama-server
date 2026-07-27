@@ -1,14 +1,16 @@
 name: Publish to PyPI
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
+      contents: write # needed to create the GitHub release below
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -17,3 +19,7 @@ jobs:
         with:
           enable-cache: false
       - run: uv publish --trusted-publishing always
+      - name: Create GitHub release
+        run: gh release create "${{ github.ref_name }}" --generate-notes
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
