@@ -39,14 +39,14 @@ for chunk in stream_chunks:
     print_indented(chunk, level=2)
 
 print_indented(net, level=2)
-assert "Qwen3.5-35B-A3B" in net.response_metadata["model_name"]
+assert "Qwen3.6-35B-A3B" in net.response_metadata["model_name"]
 
 # %% * non-streaming chat
 
 ai_message = model.invoke("what is your name?")
 rich.print(ai_message)
 assert ai_message.additional_kwargs["reasoning_content"] is not None
-assert "Qwen3.5-35B-A3B" in ai_message.response_metadata["model_name"]
+assert "Qwen3.6-35B-A3B" in ai_message.response_metadata["model_name"]
 
 # %% * streaming non-reasoning
 
@@ -75,7 +75,7 @@ for chunk in stream_chunks:
     print_indented("ACTUAL:")
     print_indented(chunk, level=2)
 print_indented(net, level=2)
-assert "Qwen3.5" in net.response_metadata["model_name"]
+assert "Qwen3.6" in net.response_metadata["model_name"]
 assert "reasoning_content" not in net.additional_kwargs
 
 # %% * non-streaming non-reasoning
@@ -90,7 +90,7 @@ net = model_nonreasoning.invoke(
     },
 )
 rich.print(net)
-assert "Qwen3.5" in net.response_metadata["model_name"]
+assert "Qwen3.6" in net.response_metadata["model_name"]
 
 # %% * agent w/ python tool function
 
