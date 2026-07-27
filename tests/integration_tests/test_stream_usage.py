@@ -1,7 +1,8 @@
+from langchain_core.messages import AIMessageChunk
 from langchain_llama_server.chat_models import ChatLlamaServer, print_indented
 
 
-def test_last_sse_has_empty_choices():
+def test__second_to_last_has_finish_reason__last_chunk_has_timing():
 
     model = ChatLlamaServer(
         api_key="",
@@ -10,7 +11,12 @@ def test_last_sse_has_empty_choices():
         debugme=True,
         # *** IMO don't use stream_usage=True with llama-server
         # *** instead use its `timings` object (on last SSE, or second to last if you also set stream_usage=True)
-        stream_usage=True)
+        stream_usage=True,
+        # !TODO! add test of stream_usage=False (finish_reason + timings both on last SSE)
+    )
+
+    model.enable_tracking_input_chunks = True
+
     stream_chunks = model.stream(
         "what is your name?",
         max_tokens=200,
@@ -20,35 +26,57 @@ def test_last_sse_has_empty_choices():
             },
         },
     )
-    net = None
-    all = []
-    for chunk in stream_chunks:
-        all.append(chunk)
-        if net is None:
-            net = chunk
-        else:
-            # very cool way to aggregate the chunks!
-            net += chunk
-        print_indented("ACTUAL:")
-        print_indented(chunk, level=2)
-    print_indented(net, level=2)
+    output_chunks = [chunk for chunk in stream_chunks]
+    # net = sum(all, AIMessageChunk(content=''))
+    # print("NET", net)
 
-    # assert net.choices[-1].delta.content == ""
+    # * INPUT ASSERTIONS (ON llama-server's outputs)
+    #  helps if llama-server's behavior changes
+    #
+    input_chunks = model._get_tracked_input_chunks()
+    # print("INPUT_CHUNKS:")
+    # print_indented(input_chunks, 2)
+    assert len(input_chunks) > 1, "missing input chunks, should be 2+ input chunks"
+    #
+    # * second to last has finish_reason
+    second_to_last_input = input_chunks[-2]
+    assert len(second_to_last_input["choices"]) == 1
+    assert second_to_last_input["choices"][0] is not None
+    #
+    # if not stop/length, then adjust test (if valid scenario)
+    #
+    # allow for model to ramble too much and get cut off with "length" seems to still behave the same as "stop"
+    in_reason = second_to_last_input["choices"][0]["finish_reason"]
+    assert in_reason in ("stop", "length")
+    #
+    # * last input chunk has usage
+    last_input = input_chunks[-1]
+    assert last_input
+    assert len(last_input["choices"]) == 0
+    assert "usage" in last_input
+    assert "timings" in last_input
+    assert last_input["timings"]["prompt_n"] >= 1
 
-    # FYI round about way to test this as the mapping to AIMessageChunk cannot validate choices was empty
-    #  so lets look for some evidence that this happened which means timings was on second to last SSE
-    print("second to last")
-    second_to_last = all[-2]
-    assert second_to_last is not None
-    assert second_to_last.debug
-    assert second_to_last.debug.timings
-    print_indented(second_to_last)
-    print()
-    print("last")
-    last = all[-1]
-    assert last is not None
-    assert "debug" not in last
-    print_indented(last)
+    # * OUTPUT ASSERTIONS
+    assert len(output_chunks) >= 2, "output chunks should be 3 or more"
+    #
+    third_to_last_output = output_chunks[-3]
+    assert third_to_last_output is not None
+    assert third_to_last_output.response_metadata is not None
+    out_reason = third_to_last_output.response_metadata["finish_reason"]
+    assert out_reason in ("stop", "length")
+
+    second_to_last_output = output_chunks[-2]
+    assert second_to_last_output is not None
+    assert second_to_last_output.debug
+    assert second_to_last_output.debug.timings
+    assert second_to_last_output.usage_metadata
+    # FYI!! lesson is DO NOT ASSUME the position of debug (timings) / usage in terms of all chunks, just check and react when found
+
+    # ? verify in openai langchain provider if this is true:
+    # * IIAC the last output chunk corresponds to [DONE] SSE?
+    last_output = output_chunks[-1]
+    assert last_output is not None
 
 
-test_last_sse_has_empty_choices()
+test__second_to_last_has_finish_reason__last_chunk_has_timing()

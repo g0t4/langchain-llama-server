@@ -76,19 +76,15 @@ class ChatLlamaServer(BaseChatOpenAI):
     #   quiet suppresses some extra fields on AIMessage[Chunk]s ... largely added to make the messages printable in a list :)
     quiet: bool = Field(default=False)
 
-    # track chunks for testing purposes
-    track_input_chunks: bool = Field(default=False)
+    # track input chunks for testing only
+    enable_tracking_input_chunks: bool = Field(default=False)
+    tracked_input_chunks: List[dict] = Field(default_factory=list)
 
-    # class-level storage for tracked chunks (reset between calls)
-    _tracked_chunks: List[dict] = []
+    def _get_tracked_input_chunks(self) -> List[dict]:
+        return self.tracked_input_chunks.copy()
 
-    def get_tracked_chunks(self) -> List[dict]:
-        """Get all tracked chunks from the last streaming call."""
-        return self._tracked_chunks.copy()
-
-    def clear_tracked_chunks(self) -> None:
-        """Clear all tracked chunks."""
-        self._tracked_chunks.clear()
+    def _clear_tracked_input_chunks(self) -> None:
+        self.tracked_input_chunks.clear()
 
     def _create_chat_result(
         self,
@@ -97,8 +93,8 @@ class ChatLlamaServer(BaseChatOpenAI):
     ) -> ChatResult:
         chat_result = super()._create_chat_result(response, generation_info)
 
-        if self.track_input_chunks:
-            self._tracked_chunks.append(dict(response))
+        if self.enable_tracking_input_chunks:
+            self.tracked_input_chunks.append(dict(response))
 
         if self.troubleshootme:
             import rich
@@ -143,8 +139,8 @@ class ChatLlamaServer(BaseChatOpenAI):
     ) -> ChatGenerationChunk | None:
         generation = super()._convert_chunk_to_generation_chunk(chunk, default_chunk_class, base_generation_info)
 
-        if self.track_input_chunks:
-            self._tracked_chunks.append(chunk)
+        if self.enable_tracking_input_chunks:
+            self.tracked_input_chunks.append(chunk)
 
         if self.troubleshootme:
             import rich
