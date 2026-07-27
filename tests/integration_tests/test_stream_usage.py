@@ -36,7 +36,7 @@ def test__second_to_last_has_finish_reason__last_chunk_has_timing():
     input_chunks = model._get_tracked_input_chunks()
     # print("INPUT_CHUNKS:")
     # print_indented(input_chunks, 2)
-    assert len(input_chunks) > 1, "missing input chunks, should be 2+ input chunks"
+    assert len(input_chunks) >= 2, "missing input chunks, should be 2+ input chunks"
     #
     # * second to last has finish_reason
     second_to_last_input = input_chunks[-2]
