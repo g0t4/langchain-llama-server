@@ -181,12 +181,12 @@ class ChatLlamaServer(BaseChatOpenAI):
         # self-report the true final chunk via chunk_position="last", instead of leaving it to
         # langchain_core's BaseChatModel.stream() -- which otherwise can't tell we're already
         # done, and appends its own extra empty AIMessageChunk after ours just to mark that.
-        #   - stream_usage=False: the chunk carrying finish_reason IS the last chunk.
-        #   - stream_usage=True: llama-server sends one more chunk after that one, with an empty
-        #     choices list, carrying usage/timings -- THAT one is the true last chunk instead.
-        has_finish_reason = bool(chunk.get("choices")) and chunk["choices"][0].get("finish_reason")
-        is_empty_choices_tail = bool(chunk) and not chunk.get("choices")
-        if is_empty_choices_tail or (has_finish_reason and not self.stream_usage):
+        # llama-server always attaches `timings` to exactly one chunk: the true last one --
+        # whether that's the finish_reason chunk (stream_usage=False) or a separate trailing
+        # usage-only chunk with an empty choices list (stream_usage=True). Checking for
+        # `timings` directly is simpler and more reliable than inferring "last" from
+        # finish_reason/choices shape, which differs across those two modes.
+        if debug_info.timings:
             message.chunk_position = "last"
 
         return generation
