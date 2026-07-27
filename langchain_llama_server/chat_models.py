@@ -178,8 +178,15 @@ class ChatLlamaServer(BaseChatOpenAI):
         if not self.quiet and (debug_info.timings or debug_info.verbose):
             message.debug = debug_info
 
-        # PRN ? hold over timings and __verbose for the last chunk too (or instead of the last SSE's chunk which is second to last chunk)? (has reasoning_content, content and full message)
-        #   chunk_position="last"
-        #   comes after all SSEs arrived
+        # self-report the true final chunk via chunk_position="last", instead of leaving it to
+        # langchain_core's BaseChatModel.stream() -- which otherwise can't tell we're already
+        # done, and appends its own extra empty AIMessageChunk after ours just to mark that.
+        #   - stream_usage=False: the chunk carrying finish_reason IS the last chunk.
+        #   - stream_usage=True: llama-server sends one more chunk after that one, with an empty
+        #     choices list, carrying usage/timings -- THAT one is the true last chunk instead.
+        has_finish_reason = bool(chunk.get("choices")) and chunk["choices"][0].get("finish_reason")
+        is_empty_choices_tail = bool(chunk) and not chunk.get("choices")
+        if is_empty_choices_tail or (has_finish_reason and not self.stream_usage):
+            message.chunk_position = "last"
 
         return generation
