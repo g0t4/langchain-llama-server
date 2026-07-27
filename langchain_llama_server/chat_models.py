@@ -142,7 +142,11 @@ class ChatLlamaServer(BaseChatOpenAI):
         if message.response_metadata:
             message.response_metadata["model_provider"] = "llama_server"
 
-        if chunk:
+        if chunk and chunk.get("choices"):
+            # btw checking for "choices" matters when passing stream_usage=True in which case the last SSE has no choices at all
+            #  and in this case the timings/__verbose are on second to last SSE
+            #  TODO investigate if any other cases result in empty choices
+            #  TODO investigate second to last SSE in usages of DebugInfo
             delta = chunk["choices"][0]["delta"]
             if delta and "reasoning_content" in delta:
                 message.additional_kwargs["reasoning_content"] = delta["reasoning_content"]
