@@ -77,7 +77,7 @@ class ChatLlamaServer(BaseChatOpenAI):
     quiet: bool = Field(default=False)
 
     # track chunks for testing purposes
-    track_chunks: bool = Field(default=False)
+    track_input_chunks: bool = Field(default=False)
 
     # class-level storage for tracked chunks (reset between calls)
     _tracked_chunks: List[dict] = []
@@ -97,7 +97,7 @@ class ChatLlamaServer(BaseChatOpenAI):
     ) -> ChatResult:
         chat_result = super()._create_chat_result(response, generation_info)
 
-        if self.track_chunks:
+        if self.track_input_chunks:
             self._tracked_chunks.append(dict(response))
 
         if self.troubleshootme:
@@ -143,7 +143,7 @@ class ChatLlamaServer(BaseChatOpenAI):
     ) -> ChatGenerationChunk | None:
         generation = super()._convert_chunk_to_generation_chunk(chunk, default_chunk_class, base_generation_info)
 
-        if self.track_chunks:
+        if self.track_input_chunks:
             self._tracked_chunks.append(chunk)
 
         if self.troubleshootme:
