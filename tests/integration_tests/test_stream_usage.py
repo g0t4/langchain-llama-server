@@ -58,7 +58,7 @@ def test__second_to_last_has_finish_reason__last_chunk_has_timing():
     assert last_input["timings"]["prompt_n"] >= 1
 
     # * OUTPUT ASSERTIONS
-    assert len(output_chunks) >= 2, "output chunks should be 3 or more"
+    assert len(output_chunks) >= 3, "output chunks should be 3 or more"
     #
     third_to_last_output = output_chunks[-3]
     assert third_to_last_output is not None
