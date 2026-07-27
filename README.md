@@ -19,6 +19,8 @@ Similar to other server integrations:
 
 - `LlamaServerLLM` ?
 - `LlamaServerEmbedding` ?
+- `/slots` endpoint -- introspect concurrent-request/context-slot usage
+- `n_probs`/logprobs support
 
 ## What about ChatLlamaCpp?
 
