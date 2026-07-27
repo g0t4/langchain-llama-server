@@ -22,10 +22,12 @@ from typing import Optional, Any
 # - BTW abc/ABC => constrains BaseChatModel to be an abstract class (not instantiable)
 # - hover docs for BaseChatModel shows architeture of chat_models
 
+
 @dataclass
 class DebugInfo:
     timings: Optional[Any] = None
     verbose: Optional[Any] = None
+
 
 def print_indented(obj, level: int = 1):
     import rich
@@ -37,6 +39,7 @@ def print_indented(obj, level: int = 1):
     else:
         what = Pretty(obj)
     rich.print(Padding(what, (0, 0, 0, 4 * level)))
+
 
 class ChatLlamaServer(BaseChatOpenAI):
     """ Connect to a remote llama-server instance
@@ -94,6 +97,9 @@ class ChatLlamaServer(BaseChatOpenAI):
     ) -> ChatResult:
         chat_result = super()._create_chat_result(response, generation_info)
 
+        if self.track_chunks:
+            self._tracked_chunks.append(dict(response))
+
         if self.troubleshootme:
             import rich
             rich.print("[bold gray0 on blue]WHOLE")
@@ -127,10 +133,6 @@ class ChatLlamaServer(BaseChatOpenAI):
         if not self.quiet and (debug_info.timings or debug_info.verbose):
             out_message.debug = debug_info
 
-        # Track full response if enabled
-        if self.track_chunks:
-            self._tracked_chunks.append(dict(response))
-
         return chat_result
 
     def _convert_chunk_to_generation_chunk(
@@ -140,6 +142,9 @@ class ChatLlamaServer(BaseChatOpenAI):
         base_generation_info: dict | None,
     ) -> ChatGenerationChunk | None:
         generation = super()._convert_chunk_to_generation_chunk(chunk, default_chunk_class, base_generation_info)
+
+        if self.track_chunks:
+            self._tracked_chunks.append(chunk)
 
         if self.troubleshootme:
             import rich
@@ -180,9 +185,5 @@ class ChatLlamaServer(BaseChatOpenAI):
         # PRN ? hold over timings and __verbose for the last chunk too (or instead of the last SSE's chunk which is second to last chunk)? (has reasoning_content, content and full message)
         #   chunk_position="last"
         #   comes after all SSEs arrived
-
-        # Track chunk if enabled
-        if self.track_chunks:
-            self._tracked_chunks.append(chunk)
 
         return generation
