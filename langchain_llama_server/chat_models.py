@@ -177,6 +177,8 @@ class ChatLlamaServer(BaseChatOpenAI):
         )
         if not self.quiet and (debug_info.timings or debug_info.verbose):
             message.debug = debug_info
+            # FYI consumers should do hasattr(message, "debug") to check since other providers won't set debug
+            # thus not setting it to None in an else here kinda helps avoid other providers blowing up if consumers always try to use `mesesage.debug`
 
         # self-report the true final chunk via chunk_position="last", instead of leaving it to
         # langchain_core's BaseChatModel.stream() -- which otherwise can't tell we're already
