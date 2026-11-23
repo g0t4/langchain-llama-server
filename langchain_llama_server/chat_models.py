@@ -7,6 +7,7 @@ from openai.types.chat import ChatCompletion
 from types import SimpleNamespace
 from dataclasses import dataclass
 from typing import Optional, Any
+from copy import deepcopy
 
 # NOTES:
 #
@@ -39,6 +40,14 @@ def print_indented(obj, level: int = 1):
     else:
         what = Pretty(obj)
     rich.print(Padding(what, (0, 0, 0, 4 * level)))
+
+
+def _preserve_response_diagnostics(message, response):
+    # Response metadata stays out of subsequent inference input.
+    for field in ("metrics", "timings", "sglext"):
+        value = response.get(field) if isinstance(response, dict) else getattr(response, field, None)
+        if value is not None:
+            message.response_metadata[field] = deepcopy(value)
 
 
 class ChatLlamaServer(BaseChatOpenAI):
@@ -92,6 +101,8 @@ class ChatLlamaServer(BaseChatOpenAI):
         generation_info: dict | None = None,
     ) -> ChatResult:
         chat_result = super()._create_chat_result(response, generation_info)
+        for generation in chat_result.generations:
+            _preserve_response_diagnostics(generation.message, response)
 
         if self.enable_tracking_input_chunks:
             self.tracked_input_chunks.append(dict(response))
@@ -158,6 +169,7 @@ class ChatLlamaServer(BaseChatOpenAI):
             return None
 
         message = generation.message
+        _preserve_response_diagnostics(message, chunk)
         if message.response_metadata:
             message.response_metadata["model_provider"] = "llama_server"
 

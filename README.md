@@ -7,6 +7,11 @@ Normally you can use `ChatOpenAI` from [`langchain-openai`](https://pypi.org/pro
 This package was created to fill in the gaps between the OpenAI spec and extra fields llama-server returns:
 - Access `reasoning_content` on both streaming and non-streaming chat completions. 
 - Capture `timings`, `__verbose` and other llama-server specific response fields using ["verbose" request param](https://github.com/ggml-org/llama.cpp/pull/24864/).
+- Preserve backend-supplied `metrics`, `timings`, and `sglext` in each message's
+  `response_metadata`, for both JSON and streaming responses, including usage-only
+  SSE events. These fields are retained even with `quiet=True` and are not sent
+  back as conversation content. Backend-specific request flags are still the
+  caller's responsibility.
 - Uses BaseChatOpenAI from [`langchain-openai`](https://pypi.org/project/langchain-openai/) to implement a `chat_model` called `ChatLlamaServer`
 
 Similar to other server integrations:
