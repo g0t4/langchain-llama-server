@@ -173,7 +173,7 @@ def test__when_stream_usage_is_false__one_chunk_has_finish_reason_and_stats_vllm
     # * unlike stream_usage=True, there's no separate trailing usage-only SSE with an empty
     #   choices list -- the one and only last SSE carries BOTH finish_reason and timings
     last_input = input_chunks[-1]
-    rich.print("last_input", last_input)
+    # rich.print("last_input", last_input)
     assert len(last_input["choices"]) == 1
     #
     # allow for model to ramble too much and get cut off with "length" seems to still behave the same as "stop"

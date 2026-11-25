@@ -157,14 +157,15 @@ class ChatLlamaServer(BaseChatOpenAI):
 
         if self.troubleshootme:
             import rich
-            rich.print("[bold gray0 on blue]CHUNK")
-            print_indented("[bold gray0 on light_steel_blue]INPUT CHUNK")
+            rich.print("[bold gray0 on #79bbf1] CHUNK ")
+            purple = "#9a9bd5"
+            print_indented(f"[bold gray0 on {purple}] INPUT CHUNK ")
             print_indented(chunk, level=2)
-            print_indented("[bold gray0 on light_steel_blue]INPUT default_chunk_class")
+            print_indented(f"[bold gray0 on {purple}] INPUT default_chunk_class ")
             print_indented(default_chunk_class, level=2)
-            print_indented("[bold gray0 on light_steel_blue]INPUT base_generation_info")
+            print_indented(f"[bold gray0 on {purple}] INPUT base_generation_info ")
             print_indented(base_generation_info, level=2)
-            print_indented("[bold gray0 on light_steel_blue]SUPER GENERATION")
+            print_indented(f"[bold gray0 on {purple}] SUPER GENERATION ")
             print_indented(generation, level=2)
 
         if generation is None or generation.message is None:
