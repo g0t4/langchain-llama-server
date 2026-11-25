@@ -1,4 +1,5 @@
 from langchain_llama_server.chat_models import ChatLlamaServer
+import rich
 
 
 def test__when_stream_usage_is_true__finish_reason_and_stats_are_split_into_two_chunks():
@@ -166,12 +167,12 @@ def test__when_stream_usage_is_false__one_chunk_has_finish_reason_and_stats_vllm
     #  helps if llama-server's behavior changes
     #
     input_chunks = model._get_tracked_input_chunks()
+    rich.print("input_chunks", input_chunks)
     assert len(input_chunks) >= 1, "missing input chunks, should be 1+ input chunks"
     #
     # * unlike stream_usage=True, there's no separate trailing usage-only SSE with an empty
     #   choices list -- the one and only last SSE carries BOTH finish_reason and timings
     last_input = input_chunks[-1]
-    import rich
     rich.print("last_input", last_input)
     assert len(last_input["choices"]) == 1
     #
