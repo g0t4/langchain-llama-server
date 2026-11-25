@@ -123,8 +123,10 @@ class ChatLlamaServer(BaseChatOpenAI):
         if type(response) is ChatCompletion:
             choice0 = response.choices[0]
             message = choice0.message
-            if hasattr(message, "reasoning_content"):
-                reasoning_content = getattr(message, "reasoning_content")
+            reasoning_content = getattr(message, "reasoning_content", None)
+            if reasoning_content is None:
+                reasoning_content = getattr(message, "reasoning", None)
+            if reasoning_content is not None:
                 out_message.additional_kwargs["reasoning_content"] = reasoning_content
         elif type(response) is dict:
             #  do I ever need dict type? if not remove it from type hints
@@ -179,8 +181,12 @@ class ChatLlamaServer(BaseChatOpenAI):
             #  TODO investigate if any other cases result in empty choices
             #  TODO investigate second to last SSE in usages of DebugInfo
             delta = chunk["choices"][0]["delta"]
-            if delta and "reasoning_content" in delta:
-                message.additional_kwargs["reasoning_content"] = delta["reasoning_content"]
+            if delta:
+                reasoning_content = delta.get("reasoning_content")
+                if reasoning_content is None:
+                    reasoning_content = delta.get("reasoning")
+                if reasoning_content is not None:
+                    message.additional_kwargs["reasoning_content"] = reasoning_content
 
         # copy debug info using DebugInfo dataclass (simplified)
         debug_info = DebugInfo(
