@@ -145,6 +145,7 @@ def test__when_stream_usage_is_false__one_chunk_has_finish_reason_and_stats():
 
 
 def test__when_stream_usage_is_false__one_chunk_has_finish_reason_and_stats_vllm():
+    print() # avoid print on test name line
 
     model = ChatLlamaServer(
         api_key="",
