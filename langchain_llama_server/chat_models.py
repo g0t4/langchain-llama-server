@@ -191,19 +191,22 @@ class ChatLlamaServer(BaseChatOpenAI):
                     reasoning_content = delta.get("reasoning")
                 if reasoning_content is not None:
                     message.additional_kwargs["reasoning_content"] = reasoning_content
-            finish_reason = choice0.get("finish_reason", None)
-            if finish_reason:
-                # TODO how about expand this test case to all backends?
-                #   TODO and update my tests to assert that there's never a stray (extra) output chunk vs input chunks b/c we always tell langchain when we hit the last chunk so it never generates a virtual one
-                #   right now if I set stream_usage=True then I assert extra chunk
-                system_fingerprint = chunk.get("system_fingerprint", "") or ""
-                is_vllm = system_fingerprint.startswith("vllm")
-                if is_vllm:
-                    import rich
-                    rich.print(f"[red]found finish reason {finish_reason=}[/]")
-                    # message.response_metadata["finish_reason"] = finish_reason
-                    message.chunk_position = "last"
-                    # TODO where to put this and for all backends?
+            # 
+            # * ok vllm sends finish_reason on last content chunk (SSE) so the usage/metrics arrive on a new SSE after the first one... thus finish_reason is not a good cue
+            #    or I could lookup if stream_usage if False and then use finish_reason to avoid extra chunk but meh it's not the biggest deal to get one extra
+            # finish_reason = choice0.get("finish_reason", None)
+            # if finish_reason:
+            #     # TODO how about expand this test case to all backends?
+            #     #   TODO and update my tests to assert that there's never a stray (extra) output chunk vs input chunks b/c we always tell langchain when we hit the last chunk so it never generates a virtual one
+            #     #   right now if I set stream_usage=True then I assert extra chunk
+            #     system_fingerprint = chunk.get("system_fingerprint", "") or ""
+            #     is_vllm = system_fingerprint.startswith("vllm")
+            #     if is_vllm:
+            #         import rich
+            #         rich.print(f"[red]found finish reason {finish_reason=}[/]")
+            #         # message.response_metadata["finish_reason"] = finish_reason
+            #         message.chunk_position = "last"
+            #         # TODO where to put this and for all backends?
 
         # copy debug info using DebugInfo dataclass (simplified)
         debug_info = DebugInfo(
