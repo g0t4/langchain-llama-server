@@ -149,6 +149,8 @@ class TestLlamaServer_Streaming_Manually:
 
 class TestVLLM_Streaming_Manually:
 
+    # FYI run just one:     ptw -- -k "TestVLLM_Streaming_Manually and true" --capture no
+
     def test__when_stream_usage_is_true__finish_reason_and_stats_are_split_into_two_chunks(self):
         print()  # avoid print on test name line
 
