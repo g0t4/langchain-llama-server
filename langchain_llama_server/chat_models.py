@@ -196,7 +196,8 @@ class ChatLlamaServer(BaseChatOpenAI):
                 # TODO how about expand this test case to all backends?
                 #   TODO and update my tests to assert that there's never a stray (extra) output chunk vs input chunks b/c we always tell langchain when we hit the last chunk so it never generates a virtual one
                 #   right now if I set stream_usage=True then I assert extra chunk
-                is_vllm = chunk.get("system_fingerprint", "").startswith("vllm")
+                system_fingerprint = chunk.get("system_fingerprint", "") or ""
+                is_vllm = system_fingerprint.startswith("vllm")
                 if is_vllm:
                     import rich
                     rich.print(f"[red]found finish reason {finish_reason=}[/]")

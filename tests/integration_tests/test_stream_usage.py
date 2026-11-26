@@ -154,7 +154,7 @@ class TestVLLM_Streaming_Manually:
 
     # FYI run just one:     ptw -- -k "TestVLLM_Streaming_Manually and true" --capture no
 
-    def test__when_stream_usage_is_true__finish_reason_and_stats_are_split_into_two_chunks(self):
+    def test__when_stream_usage_is_true(self):
         # TODO are they split or not?
         print()  # avoid print on test name line
         # TODO! setup true case copy from llama-server above and modify
@@ -168,7 +168,7 @@ class TestVLLM_Streaming_Manually:
             model="",
             base_url=VLLM_INKLING2MINI_BASE_URL,
             debugme=True,
-            stream_usage=False,
+            stream_usage=True,
         )
 
         model.enable_tracking_input_chunks = True
