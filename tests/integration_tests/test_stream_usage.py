@@ -3,6 +3,7 @@ import rich
 
 from tests.integration_tests.manual_tests.endpoints import LLAMA_SERVER_MUSE_BASE_URL, VLLM_INKLING2MINI_BASE_URL
 
+
 class TestLlamaServer_Streaming_Manually:
 
     def test__when_stream_usage_is_true__finish_reason_and_stats_are_split_into_two_chunks(self):
@@ -82,7 +83,6 @@ class TestLlamaServer_Streaming_Manually:
         assert last_output.chunk_position == "last"
         # FYI!! lesson is DO NOT ASSUME the position of debug (timings) / usage in terms of all chunks, just check and react when found
 
-
     def test__when_stream_usage_is_false__one_chunk_has_finish_reason_and_stats(self):
 
         model = ChatLlamaServer(
@@ -147,65 +147,71 @@ class TestLlamaServer_Streaming_Manually:
         assert last_output.chunk_position == "last"
 
 
-def test__when_stream_usage_is_false__one_chunk_has_finish_reason_and_stats_vllm():
-    print() # avoid print on test name line
+class TestVLLM_Streaming_Manually:
 
-    model = ChatLlamaServer(
-        api_key="",
-        model="",
-        base_url=VLLM_INKLING2MINI_BASE_URL, # inkling-2-mini on vllm
-        # base_url="http://build21.lan:8027/v1", # qwen3.8-27b on sglang
-        debugme=True,
-        stream_usage=False,
-    )
+    def test__when_stream_usage_is_true__finish_reason_and_stats_are_split_into_two_chunks(self):
+        print()  # avoid print on test name line
 
-    model.enable_tracking_input_chunks = True
+        model = ChatLlamaServer(
+            api_key="",
+            model="",
+            base_url=VLLM_INKLING2MINI_BASE_URL,  # inkling-2-mini on vllm
+            # base_url="http://build21.lan:8027/v1", # qwen3.8-27b on sglang
+            debugme=True,
+            stream_usage=False,
+        )
 
-    stream_chunks = model.stream(
-        "what is 1+1? answer only",
-        max_tokens=20,
-    )
-    output_chunks = [chunk for chunk in stream_chunks]
+        model.enable_tracking_input_chunks = True
 
-    # * INPUT ASSERTIONS (ON llama-server's outputs)
-    #  helps if llama-server's behavior changes
-    #
-    input_chunks = model._get_tracked_input_chunks()
-    rich.print("input_chunks", input_chunks)
-    assert len(input_chunks) >= 1, "missing input chunks, should be 1+ input chunks"
-    #
-    # * unlike stream_usage=True, there's no separate trailing usage-only SSE with an empty
-    #   choices list -- the one and only last SSE carries BOTH finish_reason and timings
-    last_input = input_chunks[-1]
-    # rich.print("last_input", last_input)
-    assert len(last_input["choices"]) == 1
-    #
-    # allow for model to ramble too much and get cut off with "length" seems to still behave the same as "stop"
-    in_reason = last_input["choices"][0]["finish_reason"]
-    assert in_reason in ("stop", "length")
-    #
-    # * VLLM sends usage/metrics when stream_usage is included
-    assert last_input.get("usage") is None, "`usage` should be absent -- `stream_usage=False` was not requested"
-    assert last_input.get("metrics") is None, "`metrics` should be absent -- `stream_usage=False` was not requested"
+        stream_chunks = model.stream(
+            "what is 1+1? answer only",
+            max_tokens=20,
+        )
+        output_chunks = [chunk for chunk in stream_chunks]
 
-    # # * OUTPUT ASSERTIONS
-    # #
-    # # ChatLlamaServer self-reports the true last chunk via chunk_position="last" (see
-    # # _convert_chunk_to_generation_chunk), so langchain_core's BaseChatModel.stream() doesn't
-    # # need to append its own extra empty bonus chunk -- output_chunks lines up 1:1 with
-    # # input_chunks, no +1 to account for.
-    # assert len(output_chunks) == len(input_chunks)
-    # assert len(output_chunks) >= 1, "output chunks should be 1 or more"
-    # #
-    # # * last output chunk == last input chunk: carries finish_reason AND timings together,
-    # #   since they arrived on the same SSE this time, self-reported as last
-    # last_output = output_chunks[-1]
-    # assert last_output is not None
-    # assert last_output.response_metadata is not None
-    # out_reason = last_output.response_metadata["finish_reason"]
-    # assert out_reason in ("stop", "length")
-    # assert last_output.debug
-    # assert last_output.debug.timings
-    # assert last_output.usage_metadata is None, "usage_metadata should be absent -- stream_usage=False was not requested"
-    # assert last_output.chunk_position == "last"
-    #
+        # * INPUT ASSERTIONS (ON llama-server's outputs)
+        #  helps if llama-server's behavior changes
+        #
+        input_chunks = model._get_tracked_input_chunks()
+        rich.print("input_chunks", input_chunks)
+        assert len(input_chunks) >= 1, "missing input chunks, should be 1+ input chunks"
+        #
+        # * unlike stream_usage=True, there's no separate trailing usage-only SSE with an empty
+        #   choices list -- the one and only last SSE carries BOTH finish_reason and timings
+        last_input = input_chunks[-1]
+        # rich.print("last_input", last_input)
+        assert len(last_input["choices"]) == 1
+        #
+        # allow for model to ramble too much and get cut off with "length" seems to still behave the same as "stop"
+        in_reason = last_input["choices"][0]["finish_reason"]
+        assert in_reason in ("stop", "length")
+        #
+        # * VLLM sends usage/metrics when stream_usage is included
+        assert last_input.get("usage") is None, "`usage` should be absent -- `stream_usage=False` was not requested"
+        assert last_input.get("metrics") is None, "`metrics` should be absent -- `stream_usage=False` was not requested"
+
+        # # * OUTPUT ASSERTIONS
+        # #
+        # # ChatLlamaServer self-reports the true last chunk via chunk_position="last" (see
+        # # _convert_chunk_to_generation_chunk), so langchain_core's BaseChatModel.stream() doesn't
+        # # need to append its own extra empty bonus chunk -- output_chunks lines up 1:1 with
+        # # input_chunks, no +1 to account for.
+        # assert len(output_chunks) == len(input_chunks)
+        # assert len(output_chunks) >= 1, "output chunks should be 1 or more"
+        # #
+        # # * last output chunk == last input chunk: carries finish_reason AND timings together,
+        # #   since they arrived on the same SSE this time, self-reported as last
+        # last_output = output_chunks[-1]
+        # assert last_output is not None
+        # assert last_output.response_metadata is not None
+        # out_reason = last_output.response_metadata["finish_reason"]
+        # assert out_reason in ("stop", "length")
+        # assert last_output.debug
+        # assert last_output.debug.timings
+        # assert last_output.usage_metadata is None, "usage_metadata should be absent -- stream_usage=False was not requested"
+        # assert last_output.chunk_position == "last"
+        #
+
+    def test__when_stream_usage_is_false__one_chunk_has_finish_reason_and_stats(self):
+        # TODO! setup true case
+        pass
