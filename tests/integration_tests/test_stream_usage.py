@@ -163,6 +163,66 @@ class TestVLLM_Streaming_Manually:
         # TODO assert `metrics` returned in output (from codex change to preserve that)
 
         # TODO extra_body for return_metrics IIRC?
+        model = ChatLlamaServer(
+            api_key="",
+            model="",
+            base_url=VLLM_INKLING2MINI_BASE_URL,
+            debugme=True,
+            stream_usage=False,
+        )
+
+        model.enable_tracking_input_chunks = True
+
+        stream_chunks = model.stream(
+            "what is 1+1? answer only",
+            max_tokens=200,
+        )
+        output_chunks = [chunk for chunk in stream_chunks]
+
+        # * INPUT ASSERTIONS (ON VLLM's outputs)
+        #
+        input_chunks = model._get_tracked_input_chunks()
+        assert len(input_chunks) >= 1, "missing input chunks, should be 1+ input chunks"
+        #
+        # * unlike stream_usage=True, there's no separate trailing usage-only SSE with an empty
+        #   choices list -- the one and only last SSE carries BOTH finish_reason and timings
+        last_input = input_chunks[-1]
+        assert len(last_input["choices"]) == 1
+        #
+        # allow for model to ramble too much and get cut off with "length" seems to still behave the same as "stop"
+        in_reason = last_input["choices"][0]["finish_reason"]
+        assert in_reason in ("stop", "length")
+        #
+        assert last_input.get("usage") is None, "`usage` should be absent -- `stream_usage=False` was not requested"
+        assert last_input.get("metrics") is None, "`metrics` should be absent -- `stream_usage=False` was not requested"
+        #
+        # VLLM notes:
+        # - often multiple tokens per SSE (good idea IMO)
+
+        # * OUTPUT ASSERTIONS
+        #
+        rich.print(output_chunks)
+        assert len(output_chunks) >= 1, "output chunks should be 1 or more"
+        assert len(output_chunks) == len(input_chunks)
+        # TODO do I care about marking last chunk so langchain doesn't add that for me as an extra chunk after last?
+        #   in llama-server I use timings to do so... I could use metrics/usage to do so for vllm
+        #   but that requires asking for usage or metrics (which I'd always be doing in my scenarios)
+        #   couldn't I use finish reason / stop reason to do this
+        #    yes ... choices[0].finish_reason == "stop" would tell me when to mark it
+        #    TODO what about finish_reason == "length" would it work too or is there a quirk in that case?
+        #
+        #
+        # * last output chunk should be due to self-reporting "last" and not an extra output chunk from langchain
+        last_output = output_chunks[-1]
+        assert last_output is not None
+        assert last_output.response_metadata is not None
+        assert "finish_reason" in last_output.response_metadata
+        out_reason = last_output.response_metadata["finish_reason"]
+        assert out_reason in ("stop", "length")
+        # assert last_output.debug
+        # assert last_output.debug.timings
+        # assert last_output.usage_metadata is None, "usage_metadata should be absent -- stream_usage=False was not requested"
+        assert last_output.chunk_position == "last"
 
     def test__when_stream_usage_is_false(self):
         # TODO rename test for metrics too
