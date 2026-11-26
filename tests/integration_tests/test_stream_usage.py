@@ -234,6 +234,9 @@ class TestVLLM_Streaming_Manually:
         assert chunk_with_metrics.chunk_position == "last"
 
     def test__when_stream_usage_is_false(self):
+        # ptw -- -k "TestVLLM_Streaming_Manually and false" --capture no
+        #  DO NOT run multiple tests at a time (the output can overlap)
+
         # TODO rename test for metrics too
         print()  # avoid print on test name line
 
