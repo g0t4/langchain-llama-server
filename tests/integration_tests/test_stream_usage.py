@@ -210,7 +210,7 @@ class TestVLLM_Streaming_Manually:
         assert len(output_chunks) >= 1, "output chunks should be 1 or more"
         assert len(output_chunks) == len(input_chunks)
 
-        # * second to last has finish_reason 
+        # * second to last has finish_reason
         #   as well as the last content/reasoning or both (not testing that here)
         chunk_with_finish_reason = output_chunks[-2]
         assert chunk_with_finish_reason is not None
@@ -221,8 +221,8 @@ class TestVLLM_Streaming_Manually:
 
         # * last chunk has metrics
         chunk_with_metrics = output_chunks[-1]
-        assert "metrics" in chunk_with_metrics.response_metadata # copied by _preserve_response_disagnostics
-        assert "usage" in chunk_with_metrics.response_metadata # copied by _preserve_response_disagnostics
+        assert "metrics" in chunk_with_metrics.response_metadata  # copied by _preserve_response_disagnostics
+        assert "usage" in chunk_with_metrics.response_metadata  # copied by _preserve_response_disagnostics
 
         assert chunk_with_metrics.chunk_position == "last"
 
@@ -296,7 +296,6 @@ class TestVLLM_Streaming_Manually:
         assert virtual_last_chunk.chunk_position == "last"
 
 
-
 class TestSGLANG_Streaming_Manually:
 
     # FYI run just one:     ptw -- -k "TestVLLM_Streaming_Manually and true" --capture no
@@ -312,8 +311,13 @@ class TestSGLANG_Streaming_Manually:
             base_url=SGLANG_QWEN38_BASE_URL,
             debugme=True,
             stream_usage=True,
-            # TODO extra_body for return_metrics IIRC?
-        )
+            extra_body={
+                # need these + stream_options.include_usage  (stream_usage enables this)
+                "return_spec_tokens_details": True,
+                "return_cached_tokens_details": True,
+                # -- opt-in, custom final-SSE timing overlay (assume available for all local sglang deployments)
+                "return_timings": True,
+            })
 
         model.enable_tracking_input_chunks = True
 
@@ -354,7 +358,7 @@ class TestSGLANG_Streaming_Manually:
         assert len(output_chunks) >= 1, "output chunks should be 1 or more"
         assert len(output_chunks) == len(input_chunks)
 
-        # * second to last has finish_reason 
+        # * second to last has finish_reason
         #   as well as the last content/reasoning or both (not testing that here)
         chunk_with_finish_reason = output_chunks[-2]
         assert chunk_with_finish_reason is not None
@@ -365,8 +369,8 @@ class TestSGLANG_Streaming_Manually:
 
         # * last chunk has metrics
         chunk_with_metrics = output_chunks[-1]
-        assert "metrics" in chunk_with_metrics.response_metadata # copied by _preserve_response_disagnostics
-        assert "usage" in chunk_with_metrics.response_metadata # copied by _preserve_response_disagnostics
+        assert "metrics" in chunk_with_metrics.response_metadata  # copied by _preserve_response_disagnostics
+        assert "usage" in chunk_with_metrics.response_metadata  # copied by _preserve_response_disagnostics
 
         assert chunk_with_metrics.chunk_position == "last"
 
@@ -438,4 +442,3 @@ class TestSGLANG_Streaming_Manually:
         # langchain adds this when the client doesn't self-report
         virtual_last_chunk = output_chunks[-1]
         assert virtual_last_chunk.chunk_position == "last"
-
