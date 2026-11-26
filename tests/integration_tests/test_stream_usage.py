@@ -344,20 +344,34 @@ class TestSGLANG_Streaming_Manually:
         input_chunks = model._get_tracked_input_chunks()
         assert len(input_chunks) >= 1, "missing input chunks, should be 1+ input chunks"
         #
-        last_input = input_chunks[-1]
-        rich.print(f"{last_input=}")
-        assert len(last_input["choices"]) == 0
+        # * see list above for -4/-3/-2/-1 positions of server outputs (aka inputs in langchain)
+        fourth_to_last_input__content = input_chunks[-4]
+        assert len(fourth_to_last_input__content["choices"]) == 1
+        assert fourth_to_last_input__content["choices"][0].get("delta") is not None
+        assert fourth_to_last_input__content["choices"][0].get("delta").get("content") is not None
         #
-        second_to_last_input = input_chunks[-2]
-        rich.print(f"{second_to_last_input=}")
-        assert len(second_to_last_input["choices"]) == 1
+        third_to_last_input__finish_reason = input_chunks[-3]
+        assert "choices" in third_to_last_input__finish_reason
+        assert third_to_last_input__finish_reason.get("choices") is not None
+        assert len(third_to_last_input__finish_reason.get("choices")) == 1
+        assert third_to_last_input__finish_reason.get("choices")[0] is not None
+        assert third_to_last_input__finish_reason.get("choices")[0].get("finish_reason") is not None
         #
+        second_to_last_input__sglext = input_chunks[-2]
+        assert "sglext" in second_to_last_input__sglext
+        assert isinstance(second_to_last_input__sglext["sglext"], dict)
+        #
+        last_input__timings_choices_and_usage = input_chunks[-1]
+        assert "timings" in last_input__timings_choices_and_usage
+        assert isinstance(last_input__timings_choices_and_usage["timings"], dict)
+        #
+        return
         # allow for model to ramble too much and get cut off with "length" seems to still behave the same as "stop"
-        in_reason = second_to_last_input["choices"][0]["finish_reason"]
+        in_reason = third_to_last_input__finish_reason["choices"][0]["finish_reason"]
         assert in_reason in ("stop", "length")
         #
-        assert second_to_last_input.get("usage") is None, "`usage` should be absent -- `stream_usage=False` was not requested"
-        assert second_to_last_input.get("metrics") is None, "`metrics` should be absent -- `stream_usage=False` was not requested"
+        assert third_to_last_input__finish_reason.get("usage") is None, "`usage` should be absent -- `stream_usage=False` was not requested"
+        assert third_to_last_input__finish_reason.get("metrics") is None, "`metrics` should be absent -- `stream_usage=False` was not requested"
         #
         # VLLM notes:
         # - often multiple tokens per SSE (good idea IMO)
