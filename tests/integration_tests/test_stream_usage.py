@@ -1,6 +1,8 @@
 from langchain_llama_server.chat_models import ChatLlamaServer
 import rich
 
+from tests.integration_tests.manual_tests.endpoints import LLAMA_SERVER_MUSE_BASE_URL, VLLM_INKLING2MINI_BASE_URL
+
 class TestLlamaServer_Streaming_Manually:
 
     def test__when_stream_usage_is_true__finish_reason_and_stats_are_split_into_two_chunks():
@@ -8,7 +10,7 @@ class TestLlamaServer_Streaming_Manually:
         model = ChatLlamaServer(
             api_key="",
             model="",
-            base_url="http://build21.lan:8016",
+            base_url=LLAMA_SERVER_MUSE_BASE_URL,
             debugme=True,
             # *** IMO don't use stream_usage=True with llama-server
             # *** instead use its `timings` object (on last SSE, or second to last if you also set stream_usage=True)
@@ -86,7 +88,7 @@ class TestLlamaServer_Streaming_Manually:
         model = ChatLlamaServer(
             api_key="",
             model="",
-            base_url="http://build21.lan:8016",
+            base_url=LLAMA_SERVER_MUSE_BASE_URL,
             debugme=True,
             stream_usage=False,
         )
@@ -151,7 +153,7 @@ def test__when_stream_usage_is_false__one_chunk_has_finish_reason_and_stats_vllm
     model = ChatLlamaServer(
         api_key="",
         model="",
-        base_url="http://build21.lan:8017/v1", # inkling-2-mini on vllm
+        base_url=VLLM_INKLING2MINI_BASE_URL, # inkling-2-mini on vllm
         # base_url="http://build21.lan:8027/v1", # qwen3.8-27b on sglang
         debugme=True,
         stream_usage=False,
