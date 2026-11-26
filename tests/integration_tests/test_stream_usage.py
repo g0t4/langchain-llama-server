@@ -22,7 +22,7 @@ class TestLlamaServer_Streaming_Manually:
         model.enable_tracking_input_chunks = True
 
         stream_chunks = model.stream(
-            "what is your name?",
+            "what is 1+1? answer only",
             max_tokens=200,
             extra_body={
                 "chat_template_kwargs": {
@@ -98,7 +98,7 @@ class TestLlamaServer_Streaming_Manually:
         model.enable_tracking_input_chunks = True
 
         stream_chunks = model.stream(
-            "what is your name?",
+            "what is 1+1? answer only",
             max_tokens=200,
             extra_body={
                 "chat_template_kwargs": {
@@ -159,12 +159,12 @@ class TestVLLM_Streaming_Manually:
         # TODO assert `usage` returned in input and what is it in output?
         # TODO assert `metrics` returned in output (from codex change to preserve that)
 
+        # TODO extra_body for return_metrics IIRC?
 
-    def test__when_stream_usage_is_false__one_chunk_has_finish_reason_and_stats(self):
+
+    def test__when_stream_usage_is_false__no_usage(self):
+        # TODO rename test for metrics too
         print()  # avoid print on test name line
-
-        # TODO assert `usage` returned in input and what is it in output?
-        # TODO assert `metrics` returned in output (from codex change to preserve that)
 
         model = ChatLlamaServer(
             api_key="",
@@ -178,8 +178,7 @@ class TestVLLM_Streaming_Manually:
 
         stream_chunks = model.stream(
             "what is 1+1? answer only",
-            max_tokens=20,
-            # TODO extra_body for return_metrics IIRC?
+            max_tokens=200,
         )
         output_chunks = [chunk for chunk in stream_chunks]
 
@@ -199,15 +198,22 @@ class TestVLLM_Streaming_Manually:
         #
         assert last_input.get("usage") is None, "`usage` should be absent -- `stream_usage=False` was not requested"
         assert last_input.get("metrics") is None, "`metrics` should be absent -- `stream_usage=False` was not requested"
+        #
+        # VLLM notes:
+        # - often multiple tokens per SSE (good idea IMO)
 
         # * OUTPUT ASSERTIONS
         #
-        # ChatLlamaServer self-reports the true last chunk via chunk_position="last" (see
-        # _convert_chunk_to_generation_chunk), so langchain_core's BaseChatModel.stream() doesn't
-        # need to append its own extra empty bonus chunk -- output_chunks lines up 1:1 with
-        # input_chunks, no +1 to account for.
-        assert len(output_chunks) == len(input_chunks)
+        rich.print(output_chunks)
         assert len(output_chunks) >= 1, "output chunks should be 1 or more"
+        assert len(output_chunks) == len(input_chunks)
+        # TODO do I care about marking last chunk so langchain doesn't add that for me as an extra chunk after last?
+        #   in llama-server I use timings to do so... I could use metrics/usage to do so for vllm
+        #   but that requires asking for usage or metrics (which I'd always be doing in my scenarios)
+        #   couldn't I use finish reason / stop reason to do this
+        #    yes ... choices[0].finish_reason == "stop" would tell me when to mark it
+        #    TODO what about finish_reason == "length" would it work too or is there a quirk in that case?
+        #
         #
         # * last output chunk == last input chunk: carries finish_reason AND timings together,
         #   since they arrived on the same SSE this time, self-reported as last
