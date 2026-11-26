@@ -142,6 +142,8 @@ class ChatLlamaServer(BaseChatOpenAI):
         if not self.quiet and (debug_info.timings or debug_info.verbose):
             out_message.debug = debug_info
 
+        # TODO set reponse_backend on results too?
+
         return chat_result
 
     def _convert_chunk_to_generation_chunk(
@@ -199,6 +201,7 @@ class ChatLlamaServer(BaseChatOpenAI):
             # FYI consumers should do hasattr(message, "debug") to check since other providers won't set debug
             # thus not setting it to None in an else here kinda helps avoid other providers blowing up if consumers always try to use `mesesage.debug`
 
+        # * self-report "last" chunk
         # self-report the true final chunk via chunk_position="last", instead of leaving it to
         # langchain_core's BaseChatModel.stream() -- which otherwise can't tell we're already
         # done, and appends its own extra empty AIMessageChunk after ours just to mark that.
@@ -209,5 +212,14 @@ class ChatLlamaServer(BaseChatOpenAI):
         # finish_reason/choices shape, which differs across those two modes.
         if debug_info.timings:
             message.chunk_position = "last"
+
+        # TODO if vllm => usage/metrics (vllm) or finish_reason
+        #    in vllm you wouldn't always have usage (i.e. if you didn't ask for stream_usage)
+        #    so I am thinking finish_reason might work
+        #    TODO can I detect vllm here? or just use finish_reason?
+        #      system_fingerprint startswith("vllm") is the strongest signal
+        # TODO if sglang? => usage/sglext/others?
+
+        # TODO set reponse_backend on results too?
 
         return generation
