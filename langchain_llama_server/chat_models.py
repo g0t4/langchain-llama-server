@@ -183,7 +183,8 @@ class ChatLlamaServer(BaseChatOpenAI):
             #  and in this case the timings/__verbose are on second to last SSE
             #  TODO investigate if any other cases result in empty choices
             #  TODO investigate second to last SSE in usages of DebugInfo
-            delta = chunk["choices"][0]["delta"]
+            choice0 = chunk["choices"][0]
+            delta = choice0["delta"]
             if delta:
                 reasoning_content = delta.get("reasoning_content")
                 if reasoning_content is None:
