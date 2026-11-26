@@ -324,16 +324,16 @@ class TestSGLANG_Streaming_Manually:
         rich.print(f"{last_input=}")
         assert len(last_input["choices"]) == 0
         #
-        second_last_input = input_chunks[-2]
-        rich.print(f"{second_last_input=}")
-        assert len(second_last_input["choices"]) == 1
+        second_to_last_input = input_chunks[-2]
+        rich.print(f"{second_to_last_input=}")
+        assert len(second_to_last_input["choices"]) == 1
         #
         # allow for model to ramble too much and get cut off with "length" seems to still behave the same as "stop"
-        in_reason = second_last_input["choices"][0]["finish_reason"]
+        in_reason = second_to_last_input["choices"][0]["finish_reason"]
         assert in_reason in ("stop", "length")
         #
-        assert second_last_input.get("usage") is None, "`usage` should be absent -- `stream_usage=False` was not requested"
-        assert second_last_input.get("metrics") is None, "`metrics` should be absent -- `stream_usage=False` was not requested"
+        assert second_to_last_input.get("usage") is None, "`usage` should be absent -- `stream_usage=False` was not requested"
+        assert second_to_last_input.get("metrics") is None, "`metrics` should be absent -- `stream_usage=False` was not requested"
         #
         # VLLM notes:
         # - often multiple tokens per SSE (good idea IMO)
