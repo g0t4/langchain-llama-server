@@ -125,6 +125,9 @@ class TestLlamaServer_Streaming_Manually:
         assert last_input.get("usage") is None, "usage should be absent -- stream_usage=False was not requested"
         assert "timings" in last_input
         assert last_input["timings"]["prompt_n"] >= 1
+        #
+        # * assert none of the chunks have metrics fields (forget order, that doesn't matter)
+        assert not any([i for i in input_chunks if i.get("timings") is not None])
 
         # * OUTPUT ASSERTIONS
         #
@@ -253,8 +256,9 @@ class TestVLLM_Streaming_Manually:
         in_reason = last_input["choices"][0]["finish_reason"]
         assert in_reason in ("stop", "length")
         #
-        assert last_input.get("usage") is None, "`usage` should be absent -- `stream_usage=False` was not requested"
-        assert last_input.get("metrics") is None, "`metrics` should be absent -- `stream_usage=False` was not requested"
+        # * assert none of the chunks have metrics fields (forget order, that doesn't matter)
+        assert not any([i for i in input_chunks if i.get("usage") is not None])
+        assert not any([i for i in input_chunks if i.get("metrics") is not None])
         #
         # VLLM notes:
         # - often multiple tokens per SSE (good idea IMO)
@@ -353,9 +357,10 @@ class TestSGLANG_Streaming_Manually:
         third_to_last_input__finish_reason = input_chunks[-3]
         assert "choices" in third_to_last_input__finish_reason
         assert third_to_last_input__finish_reason.get("choices") is not None
+        assert isinstance(third_to_last_input__finish_reason.get("choices"), list)
         assert len(third_to_last_input__finish_reason.get("choices")) == 1
         assert third_to_last_input__finish_reason.get("choices")[0] is not None
-        assert third_to_last_input__finish_reason.get("choices")[0].get("finish_reason") is not None
+        assert third_to_last_input__finish_reason.get("choices")[0].get("finish_reason") in ("stop", "length")
         #
         second_to_last_input__sglext = input_chunks[-2]
         assert "sglext" in second_to_last_input__sglext
@@ -363,40 +368,34 @@ class TestSGLANG_Streaming_Manually:
         #
         last_input__timings_choices_and_usage = input_chunks[-1]
         assert "timings" in last_input__timings_choices_and_usage
-        assert isinstance(last_input__timings_choices_and_usage["timings"], dict)
-        #
-        return
-        # allow for model to ramble too much and get cut off with "length" seems to still behave the same as "stop"
-        in_reason = third_to_last_input__finish_reason["choices"][0]["finish_reason"]
-        assert in_reason in ("stop", "length")
-        #
-        assert third_to_last_input__finish_reason.get("usage") is None, "`usage` should be absent -- `stream_usage=False` was not requested"
-        assert third_to_last_input__finish_reason.get("metrics") is None, "`metrics` should be absent -- `stream_usage=False` was not requested"
-        #
-        # VLLM notes:
-        # - often multiple tokens per SSE (good idea IMO)
+        assert isinstance(last_input__timings_choices_and_usage.get("timings"), dict)
+        assert isinstance(last_input__timings_choices_and_usage.get("timings").get("choices"), list)
+        assert isinstance(last_input__timings_choices_and_usage.get("usage"), dict)
 
         # * OUTPUT ASSERTIONS
         #
         rich.print(output_chunks)
         assert len(output_chunks) >= 1, "output chunks should be 1 or more"
-        assert len(output_chunks) == len(input_chunks)
+        assert len(output_chunks) == len(input_chunks)  # my timings => last check kicks in here too from llama-server b/c they both have same timings name on last chunk (last input chunk, and thus the self-report means the last output chunk has timings on it too)
 
         # * second to last has finish_reason
         #   as well as the last content/reasoning or both (not testing that here)
-        chunk_with_finish_reason = output_chunks[-2]
-        assert chunk_with_finish_reason is not None
-        assert chunk_with_finish_reason.response_metadata is not None
-        assert "finish_reason" in chunk_with_finish_reason.response_metadata
-        output_finish_reason = chunk_with_finish_reason.response_metadata["finish_reason"]
+        fourth_to_last_output = output_chunks[-4]
+        assert fourth_to_last_output.content is not None # not necessary to test but can flag issues if inexplicably missing
+        #
+        third_to_last_output = output_chunks[-3]
+        assert third_to_last_output.response_metadata is not None
+        assert "finish_reason" in third_to_last_output.response_metadata
+        output_finish_reason = third_to_last_output.response_metadata["finish_reason"]
         assert output_finish_reason in ("stop", "length")
-
-        # * last chunk has metrics
-        chunk_with_metrics = output_chunks[-1]
-        assert "metrics" in chunk_with_metrics.response_metadata  # copied by _preserve_response_disagnostics
-        assert "usage" in chunk_with_metrics.response_metadata  # copied by _preserve_response_disagnostics
-
-        assert chunk_with_metrics.chunk_position == "last"
+        #
+        second_to_last_output = output_chunks[-2]
+        assert second_to_last_output.response_metadata.get("sglext") is not None  # copied by _preserve_response_disagnostics
+        #
+        last_output = output_chunks[-1]
+        assert isinstance(last_output.response_metadata.get("timings"), dict)
+        assert isinstance(last_output.response_metadata.get("timings").get("choices"), list)
+        assert isinstance(last_output.response_metadata.get("usage"), dict)
 
     def test__when_stream_usage_is_false(self):
         # ptw -- -k "SGLANG and Streaming_Manually and false" --capture no
@@ -434,11 +433,10 @@ class TestSGLANG_Streaming_Manually:
         in_reason = last_input["choices"][0]["finish_reason"]
         assert in_reason in ("stop", "length")
         #
-        assert last_input.get("usage") is None, "`usage` should be absent -- `stream_usage=False` was not requested"
-        assert last_input.get("metrics") is None, "`metrics` should be absent -- `stream_usage=False` was not requested"
-        #
-        # VLLM notes:
-        # - often multiple tokens per SSE (good idea IMO)
+        # * assert none of the chunks have metrics fields (forget order, that doesn't matter)
+        assert not any([i for i in input_chunks if i.get("usage") is not None])
+        assert not any([i for i in input_chunks if i.get("sglext") is not None])
+        assert not any([i for i in input_chunks if i.get("timings") is not None])
 
         # * OUTPUT ASSERTIONS
         #
