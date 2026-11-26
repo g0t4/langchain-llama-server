@@ -46,6 +46,7 @@ class TestLlamaServer_Streaming_Manually:
         # if not stop/length, then adjust test (if valid scenario)
         #
         # allow for model to ramble too much and get cut off with "length" seems to still behave the same as "stop"
+        assert "finish_reason" in second_to_last_input["choices"][0]
         in_reason = second_to_last_input["choices"][0]["finish_reason"]
         assert in_reason in ("stop", "length")
         #
@@ -140,6 +141,7 @@ class TestLlamaServer_Streaming_Manually:
         last_output = output_chunks[-1]
         assert last_output is not None
         assert last_output.response_metadata is not None
+        assert "finish_reason" in last_output.response_metadata
         out_reason = last_output.response_metadata["finish_reason"]
         assert out_reason in ("stop", "length")
         assert last_output.debug
@@ -160,7 +162,6 @@ class TestVLLM_Streaming_Manually:
         # TODO assert `metrics` returned in output (from codex change to preserve that)
 
         # TODO extra_body for return_metrics IIRC?
-
 
     def test__when_stream_usage_is_false__no_usage(self):
         # TODO rename test for metrics too
@@ -220,6 +221,7 @@ class TestVLLM_Streaming_Manually:
         last_output = output_chunks[-1]
         assert last_output is not None
         assert last_output.response_metadata is not None
+        assert "finish_reason" in last_output.response_metadata
         out_reason = last_output.response_metadata["finish_reason"]
         assert out_reason in ("stop", "length")
         assert last_output.debug
