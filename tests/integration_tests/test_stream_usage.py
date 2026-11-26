@@ -7,7 +7,7 @@ def test__when_stream_usage_is_true__finish_reason_and_stats_are_split_into_two_
     model = ChatLlamaServer(
         api_key="",
         model="",
-        base_url="http://ask.lan:8012",
+        base_url="http://build21.lan:8016",
         debugme=True,
         # *** IMO don't use stream_usage=True with llama-server
         # *** instead use its `timings` object (on last SSE, or second to last if you also set stream_usage=True)
@@ -85,7 +85,7 @@ def test__when_stream_usage_is_false__one_chunk_has_finish_reason_and_stats():
     model = ChatLlamaServer(
         api_key="",
         model="",
-        base_url="http://ask.lan:8012",
+        base_url="http://build21.lan:8016",
         debugme=True,
         stream_usage=False,
     )
