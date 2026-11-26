@@ -114,8 +114,6 @@ class TestLlamaServer_Streaming_Manually:
         input_chunks = model._get_tracked_input_chunks()
         assert len(input_chunks) >= 1, "missing input chunks, should be 1+ input chunks"
         #
-        # * unlike stream_usage=True, there's no separate trailing usage-only SSE with an empty
-        #   choices list -- the one and only last SSE carries BOTH finish_reason and timings
         last_input = input_chunks[-1]
         assert len(last_input["choices"]) == 1
         #
@@ -155,14 +153,8 @@ class TestVLLM_Streaming_Manually:
     # FYI run just one:     ptw -- -k "TestVLLM_Streaming_Manually and true" --capture no
 
     def test__when_stream_usage_is_true__finish_reason_and_stats_are_split_into_two_separate_chunks(self):
-        # TODO are they split or not?
-        print()  # avoid print on test name line
-        # TODO! setup true case copy from llama-server above and modify
-        # TODO at least:
-        # TODO assert `usage` returned in input and what is it in output?
-        # TODO assert `metrics` returned in output (from codex change to preserve that)
 
-        # TODO extra_body for return_metrics IIRC?
+        print()  # avoid print on test name line
         model = ChatLlamaServer(
             api_key="",
             model="",
@@ -184,8 +176,6 @@ class TestVLLM_Streaming_Manually:
         input_chunks = model._get_tracked_input_chunks()
         assert len(input_chunks) >= 1, "missing input chunks, should be 1+ input chunks"
         #
-        # * unlike stream_usage=True, there's no separate trailing usage-only SSE with an empty
-        #   choices list -- the one and only last SSE carries BOTH finish_reason and timings
         last_input = input_chunks[-1]
         rich.print(f"{last_input=}")
         assert len(last_input["choices"]) == 0
@@ -253,8 +243,6 @@ class TestVLLM_Streaming_Manually:
         input_chunks = model._get_tracked_input_chunks()
         assert len(input_chunks) >= 1, "missing input chunks, should be 1+ input chunks"
         #
-        # * unlike stream_usage=True, there's no separate trailing usage-only SSE with an empty
-        #   choices list -- the one and only last SSE carries BOTH finish_reason and timings
         last_input = input_chunks[-1]
         assert len(last_input["choices"]) == 1
         #
@@ -332,8 +320,6 @@ class TestSGLANG_Streaming_Manually:
         input_chunks = model._get_tracked_input_chunks()
         assert len(input_chunks) >= 1, "missing input chunks, should be 1+ input chunks"
         #
-        # * unlike stream_usage=True, there's no separate trailing usage-only SSE with an empty
-        #   choices list -- the one and only last SSE carries BOTH finish_reason and timings
         last_input = input_chunks[-1]
         rich.print(f"{last_input=}")
         assert len(last_input["choices"]) == 0
@@ -402,8 +388,6 @@ class TestSGLANG_Streaming_Manually:
         input_chunks = model._get_tracked_input_chunks()
         assert len(input_chunks) >= 1, "missing input chunks, should be 1+ input chunks"
         #
-        # * unlike stream_usage=True, there's no separate trailing usage-only SSE with an empty
-        #   choices list -- the one and only last SSE carries BOTH finish_reason and timings
         last_input = input_chunks[-1]
         assert len(last_input["choices"]) == 1
         #
