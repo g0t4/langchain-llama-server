@@ -1,7 +1,7 @@
 from langchain_llama_server.chat_models import ChatLlamaServer
 import rich
 
-from tests.integration_tests.manual_tests.endpoints import LLAMA_SERVER_MUSE_BASE_URL, VLLM_INKLING2MINI_BASE_URL
+from tests.integration_tests.manual_tests.endpoints import LLAMA_SERVER_MUSE_BASE_URL, SGLANG_QWEN38_BASE_URL, VLLM_INKLING2MINI_BASE_URL
 
 
 class TestLlamaServer_Streaming_Manually:
@@ -321,7 +321,7 @@ class TestSGLANG_Streaming_Manually:
         model = ChatLlamaServer(
             api_key="",
             model="",
-            base_url=VLLM_INKLING2MINI_BASE_URL,
+            base_url=SGLANG_QWEN38_BASE_URL,
             debugme=True,
             stream_usage=True,
         )
@@ -398,7 +398,7 @@ class TestSGLANG_Streaming_Manually:
         model = ChatLlamaServer(
             api_key="",
             model="",
-            base_url=VLLM_INKLING2MINI_BASE_URL,
+            base_url=SGLANG_QWEN38_BASE_URL,
             debugme=True,
             stream_usage=False,
         )
