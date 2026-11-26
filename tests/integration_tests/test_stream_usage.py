@@ -5,7 +5,7 @@ from tests.integration_tests.manual_tests.endpoints import LLAMA_SERVER_MUSE_BAS
 
 class TestLlamaServer_Streaming_Manually:
 
-    def test__when_stream_usage_is_true__finish_reason_and_stats_are_split_into_two_chunks():
+    def test__when_stream_usage_is_true__finish_reason_and_stats_are_split_into_two_chunks(self):
 
         model = ChatLlamaServer(
             api_key="",
@@ -83,7 +83,7 @@ class TestLlamaServer_Streaming_Manually:
         # FYI!! lesson is DO NOT ASSUME the position of debug (timings) / usage in terms of all chunks, just check and react when found
 
 
-    def test__when_stream_usage_is_false__one_chunk_has_finish_reason_and_stats():
+    def test__when_stream_usage_is_false__one_chunk_has_finish_reason_and_stats(self):
 
         model = ChatLlamaServer(
             api_key="",
