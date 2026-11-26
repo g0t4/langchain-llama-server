@@ -297,6 +297,8 @@ class TestVLLM_Streaming_Manually:
         out_reason = chunk_with_finish_reason.response_metadata["finish_reason"]
         assert out_reason in ("stop", "length")
 
+        # FYI! STOP BLOCKING extra "last" chunk... clients can stop on metrics! (I always use metrics)
+        #    or  have them stop on finish_reason if not using metrics
         # langchain adds this when the client doesn't self-report
         virtual_last_chunk = output_chunks[-1]
         assert virtual_last_chunk.chunk_position == "last"
