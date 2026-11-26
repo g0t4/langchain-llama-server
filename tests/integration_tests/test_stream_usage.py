@@ -72,8 +72,8 @@ class TestLlamaServer_Streaming_Manually:
         second_to_last_output = output_chunks[-2]
         assert second_to_last_output is not None
         assert second_to_last_output.response_metadata is not None
-        out_reason = second_to_last_output.response_metadata["finish_reason"]
-        assert out_reason in ("stop", "length")
+        output_finish_reason = second_to_last_output.response_metadata["finish_reason"]
+        assert output_finish_reason in ("stop", "length")
         assert not second_to_last_output.chunk_position, "finish_reason chunk isn't the true last one when stream_usage=True -- one more (usage/timings) chunk follows it"
 
         # * last output chunk == last input chunk: the usage/timings-only tail, self-reported as last
@@ -142,8 +142,8 @@ class TestLlamaServer_Streaming_Manually:
         assert last_output is not None
         assert last_output.response_metadata is not None
         assert "finish_reason" in last_output.response_metadata
-        out_reason = last_output.response_metadata["finish_reason"]
-        assert out_reason in ("stop", "length")
+        output_finish_reason = last_output.response_metadata["finish_reason"]
+        assert output_finish_reason in ("stop", "length")
         assert last_output.debug
         assert last_output.debug.timings
         assert last_output.usage_metadata is None, "usage_metadata should be absent -- stream_usage=False was not requested"
@@ -216,8 +216,8 @@ class TestVLLM_Streaming_Manually:
         assert chunk_with_finish_reason is not None
         assert chunk_with_finish_reason.response_metadata is not None
         assert "finish_reason" in chunk_with_finish_reason.response_metadata
-        out_reason = chunk_with_finish_reason.response_metadata["finish_reason"]
-        assert out_reason in ("stop", "length")
+        output_finish_reason = chunk_with_finish_reason.response_metadata["finish_reason"]
+        assert output_finish_reason in ("stop", "length")
 
         # * last chunk has metrics
         chunk_with_metrics = output_chunks[-1]
@@ -286,8 +286,8 @@ class TestVLLM_Streaming_Manually:
         assert chunk_with_finish_reason is not None
         assert chunk_with_finish_reason.response_metadata is not None
         assert "finish_reason" in chunk_with_finish_reason.response_metadata
-        out_reason = chunk_with_finish_reason.response_metadata["finish_reason"]
-        assert out_reason in ("stop", "length")
+        output_finish_reason = chunk_with_finish_reason.response_metadata["finish_reason"]
+        assert output_finish_reason in ("stop", "length")
 
         # FYI! STOP BLOCKING extra "last" chunk... clients can stop on metrics! (I always use metrics)
         #    or  have them stop on finish_reason if not using metrics
@@ -372,8 +372,8 @@ class TestSGLANG_Streaming_Manually:
         assert chunk_with_finish_reason is not None
         assert chunk_with_finish_reason.response_metadata is not None
         assert "finish_reason" in chunk_with_finish_reason.response_metadata
-        out_reason = chunk_with_finish_reason.response_metadata["finish_reason"]
-        assert out_reason in ("stop", "length")
+        output_finish_reason = chunk_with_finish_reason.response_metadata["finish_reason"]
+        assert output_finish_reason in ("stop", "length")
 
         # * last chunk has metrics
         chunk_with_metrics = output_chunks[-1]
@@ -442,8 +442,8 @@ class TestSGLANG_Streaming_Manually:
         assert chunk_with_finish_reason is not None
         assert chunk_with_finish_reason.response_metadata is not None
         assert "finish_reason" in chunk_with_finish_reason.response_metadata
-        out_reason = chunk_with_finish_reason.response_metadata["finish_reason"]
-        assert out_reason in ("stop", "length")
+        output_finish_reason = chunk_with_finish_reason.response_metadata["finish_reason"]
+        assert output_finish_reason in ("stop", "length")
 
         # FYI! STOP BLOCKING extra "last" chunk... clients can stop on metrics! (I always use metrics)
         #    or  have them stop on finish_reason if not using metrics
