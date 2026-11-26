@@ -304,20 +304,15 @@ class TestSGLANG_Streaming_Manually:
     def test__when_stream_usage_is_true__finish_reason_and_stats_are_split_into_two_separate_chunks(self):
         # ptw -- -k "SGLANG and Streaming_Manually and false" --capture no
 
-        # TODO are they split or not?
         print()  # avoid print on test name line
-        # TODO! setup true case copy from llama-server above and modify
-        # TODO at least:
-        # TODO assert `usage` returned in input and what is it in output?
-        # TODO assert `metrics` returned in output (from codex change to preserve that)
 
-        # TODO extra_body for return_metrics IIRC?
         model = ChatLlamaServer(
             api_key="",
             model="",
             base_url=SGLANG_QWEN38_BASE_URL,
             debugme=True,
             stream_usage=True,
+            # TODO extra_body for return_metrics IIRC?
         )
 
         model.enable_tracking_input_chunks = True
@@ -339,7 +334,7 @@ class TestSGLANG_Streaming_Manually:
         rich.print(f"{last_input=}")
         assert len(last_input["choices"]) == 0
         #
-        second_last_input = input_chunks[-2] # TODO how about just make sure one of the last chunks has the usage/metrics
+        second_last_input = input_chunks[-2]
         rich.print(f"{second_last_input=}")
         assert len(second_last_input["choices"]) == 1
         #
@@ -358,13 +353,6 @@ class TestSGLANG_Streaming_Manually:
         rich.print(output_chunks)
         assert len(output_chunks) >= 1, "output chunks should be 1 or more"
         assert len(output_chunks) == len(input_chunks)
-        # TODO do I care about marking last chunk so langchain doesn't add that for me as an extra chunk after last?
-        #   in llama-server I use timings to do so... I could use metrics/usage to do so for vllm
-        #   but that requires asking for usage or metrics (which I'd always be doing in my scenarios)
-        #   couldn't I use finish reason / stop reason to do this
-        #    yes ... choices[0].finish_reason == "stop" would tell me when to mark it
-        #    TODO what about finish_reason == "length" would it work too or is there a quirk in that case?
-        #
 
         # * second to last has finish_reason 
         #   as well as the last content/reasoning or both (not testing that here)
