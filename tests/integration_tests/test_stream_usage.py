@@ -386,6 +386,7 @@ class TestSGLANG_Streaming_Manually:
             base_url=SGLANG_QWEN38_BASE_URL,
             debugme=True,
             stream_usage=False,
+            # NOTE no extra_body
         )
 
         model.enable_tracking_input_chunks = True
