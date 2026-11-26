@@ -44,7 +44,7 @@ def print_indented(obj, level: int = 1):
 
 def _preserve_response_diagnostics(message, response):
     # Response metadata stays out of subsequent inference input.
-    for field in ("metrics", "timings", "sglext"):
+    for field in ("metrics", "timings", "sglext", "usage"):
         value = response.get(field) if isinstance(response, dict) else getattr(response, field, None)
         if value is not None:
             message.response_metadata[field] = deepcopy(value)
@@ -212,6 +212,14 @@ class ChatLlamaServer(BaseChatOpenAI):
         # `timings` directly is simpler and more reliable than inferring "last" from
         # finish_reason/choices shape, which differs across those two modes.
         if debug_info.timings:
+            message.chunk_position = "last"
+
+        # * vllm ensure metrics SSE is the LAST sse
+        # TODO dedupe vs codex's preserve above?
+        # TODO how about drop this requirement (not sure downstream clients even need this in any of my tools)
+        usage = chunk.get("usage", None)
+        if usage:
+            print("USAGE IN CHUNKER")
             message.chunk_position = "last"
 
         # TODO if vllm => usage/metrics (vllm) or finish_reason
