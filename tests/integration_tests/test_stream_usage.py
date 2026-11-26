@@ -320,19 +320,22 @@ class TestSGLANG_Streaming_Manually:
 
         # FYI server to server outputs chunk comparison:
         # - SGLANG "inputs" (server outputs) :
-        #     last_content chunk (content/reasoning_content)
-        #     finish_reason chunk (NOT with last content, after it)
-        #     sglext.spec_token_details+usage chunk (my custom extension is on its own SSE)
+        #     -4 last_content chunk (content/reasoning_content)
+        #     -3 finish_reason chunk (NOT with last content, after it)
+        #     -2 sglext.spec_token_details+usage chunk (my custom extension is on its own SSE)
         #       btw langchain (or my provider: usage => usage_metadata (completely different field names)
+        #     -1 timings.choices + usage chunk
         #   - TODO langchain outputs (document)
         # - VLLM "inputs":
         #     TODO double check this
-        #     last_content_chunk_has_finish_reason_too
-        #     stats_chunk (usage/metrics if include_usage)
+        #     -2 last_content_chunk_has_finish_reason_too
+        #     -1 stats_chunk (usage/metrics if include_usage)
         #       FYI downstream clients will need to accumulate stats (which makes sense as we do that with all SSEs to reconstruct original response)
         #   - TODO langchain outputs (document)
         # - llama-server "inputs":
-        #     TODO verify (I think it matches vllm)
+        #     TODO verify (I think it matches vllm) llama-server's outputs:
+        #     -2 lsat_content_chunk_has_finish_reason too???
+        #     -1 timings chunk
         #   - TODO langchain outputs (document)
 
         # * INPUT ASSERTIONS (ON SGLANG's outputs)
