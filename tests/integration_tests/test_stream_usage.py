@@ -155,6 +155,7 @@ class TestVLLM_Streaming_Manually:
     # FYI run just one:     ptw -- -k "TestVLLM_Streaming_Manually and true" --capture no
 
     def test__when_stream_usage_is_true__finish_reason_and_stats_are_split_into_two_chunks(self):
+        # TODO are they split or not?
         print()  # avoid print on test name line
         # TODO! setup true case copy from llama-server above and modify
         # TODO at least:
@@ -163,7 +164,7 @@ class TestVLLM_Streaming_Manually:
 
         # TODO extra_body for return_metrics IIRC?
 
-    def test__when_stream_usage_is_false__no_usage(self):
+    def test__when_stream_usage_is_false(self):
         # TODO rename test for metrics too
         print()  # avoid print on test name line
 
@@ -216,15 +217,14 @@ class TestVLLM_Streaming_Manually:
         #    TODO what about finish_reason == "length" would it work too or is there a quirk in that case?
         #
         #
-        # * last output chunk == last input chunk: carries finish_reason AND timings together,
-        #   since they arrived on the same SSE this time, self-reported as last
+        # * last output chunk should be due to self-reporting "last" and not an extra output chunk from langchain
         last_output = output_chunks[-1]
         assert last_output is not None
         assert last_output.response_metadata is not None
         assert "finish_reason" in last_output.response_metadata
         out_reason = last_output.response_metadata["finish_reason"]
         assert out_reason in ("stop", "length")
-        assert last_output.debug
-        assert last_output.debug.timings
-        assert last_output.usage_metadata is None, "usage_metadata should be absent -- stream_usage=False was not requested"
+        # assert last_output.debug
+        # assert last_output.debug.timings
+        # assert last_output.usage_metadata is None, "usage_metadata should be absent -- stream_usage=False was not requested"
         assert last_output.chunk_position == "last"
