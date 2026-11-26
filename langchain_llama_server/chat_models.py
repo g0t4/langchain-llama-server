@@ -103,6 +103,7 @@ class ChatLlamaServer(BaseChatOpenAI):
         chat_result = super()._create_chat_result(response, generation_info)
         for generation in chat_result.generations:
             _preserve_response_diagnostics(generation.message, response)
+            # TODO? message.response_metadata["backend"] = "?"
 
         if self.enable_tracking_input_chunks:
             self.tracked_input_chunks.append(dict(response))
@@ -177,6 +178,7 @@ class ChatLlamaServer(BaseChatOpenAI):
         _preserve_response_diagnostics(message, chunk)
         if message.response_metadata:
             message.response_metadata["model_provider"] = "llama_server"
+        # TODO? message.response_metadata["backend"] = "?"
 
         if chunk and chunk.get("choices"):
             # btw checking for "choices" matters when passing stream_usage=True in which case the last SSE has no choices at all
@@ -215,8 +217,7 @@ class ChatLlamaServer(BaseChatOpenAI):
             message.chunk_position = "last"
 
         # * vllm ensure metrics SSE is the LAST sse
-        # TODO dedupe vs codex's preserve above?
-        # TODO how about drop this requirement (not sure downstream clients even need this in any of my tools)
+        # TODO! how about drop this requirement (not sure downstream clients even need this in any of my tools)
         usage = chunk.get("usage", None)
         if usage:
             print("USAGE IN CHUNKER")

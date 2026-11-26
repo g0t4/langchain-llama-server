@@ -33,7 +33,7 @@ class TestLlamaServer_Streaming_Manually:
         output_chunks = [chunk for chunk in stream_chunks]
 
         # * INPUT ASSERTIONS (ON llama-server's outputs)
-        #  helps if llama-server's behavior changes
+        #  these are merely to troubleshoot server responses (aka inputs into langchain)
         #
         input_chunks = model._get_tracked_input_chunks()
         assert len(input_chunks) >= 2, "missing input chunks, should be 2+ input chunks"
@@ -110,6 +110,7 @@ class TestLlamaServer_Streaming_Manually:
         output_chunks = [chunk for chunk in stream_chunks]
 
         # * INPUT ASSERTIONS (ON llama-server's outputs)
+        #  these are merely to troubleshoot server responses (aka inputs into langchain)
         #
         input_chunks = model._get_tracked_input_chunks()
         assert len(input_chunks) >= 1, "missing input chunks, should be 1+ input chunks"
@@ -172,6 +173,7 @@ class TestVLLM_Streaming_Manually:
         output_chunks = [chunk for chunk in stream_chunks]
 
         # * INPUT ASSERTIONS (ON VLLM's outputs)
+        #  these are merely to troubleshoot server responses (aka inputs into langchain)
         #
         input_chunks = model._get_tracked_input_chunks()
         assert len(input_chunks) >= 1, "missing input chunks, should be 1+ input chunks"
@@ -239,6 +241,7 @@ class TestVLLM_Streaming_Manually:
         output_chunks = [chunk for chunk in stream_chunks]
 
         # * INPUT ASSERTIONS (ON VLLM's outputs)
+        #  these are merely to troubleshoot server responses (aka inputs into langchain)
         #
         input_chunks = model._get_tracked_input_chunks()
         assert len(input_chunks) >= 1, "missing input chunks, should be 1+ input chunks"
@@ -315,7 +318,25 @@ class TestSGLANG_Streaming_Manually:
         )
         output_chunks = [chunk for chunk in stream_chunks]
 
-        # * INPUT ASSERTIONS (ON VLLM's outputs)
+        # FYI server to server outputs chunk comparison:
+        # - SGLANG "inputs" (server outputs) :
+        #     last_content chunk (content/reasoning_content)
+        #     finish_reason chunk (NOT with last content, after it)
+        #     sglext.spec_token_details+usage chunk (my custom extension is on its own SSE)
+        #       btw langchain (or my provider: usage => usage_metadata (completely different field names)
+        #   - TODO langchain outputs (document)
+        # - VLLM "inputs":
+        #     TODO double check this
+        #     last_content_chunk_has_finish_reason_too
+        #     stats_chunk (usage/metrics if include_usage)
+        #       FYI downstream clients will need to accumulate stats (which makes sense as we do that with all SSEs to reconstruct original response)
+        #   - TODO langchain outputs (document)
+        # - llama-server "inputs":
+        #     TODO verify (I think it matches vllm)
+        #   - TODO langchain outputs (document)
+
+        # * INPUT ASSERTIONS (ON SGLANG's outputs)
+        #  these are merely to troubleshoot server responses (aka inputs into langchain)
         #
         input_chunks = model._get_tracked_input_chunks()
         assert len(input_chunks) >= 1, "missing input chunks, should be 1+ input chunks"
@@ -383,7 +404,8 @@ class TestSGLANG_Streaming_Manually:
         )
         output_chunks = [chunk for chunk in stream_chunks]
 
-        # * INPUT ASSERTIONS (ON VLLM's outputs)
+        # * INPUT ASSERTIONS (ON SGLANG's outputs)
+        #  these are merely to troubleshoot server responses (aka inputs into langchain)
         #
         input_chunks = model._get_tracked_input_chunks()
         assert len(input_chunks) >= 1, "missing input chunks, should be 1+ input chunks"
