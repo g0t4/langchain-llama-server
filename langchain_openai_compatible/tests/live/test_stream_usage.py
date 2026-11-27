@@ -80,7 +80,12 @@ def stream(backend, usage, **extra_body):
     for i, chunk in enumerate(chunks):
         print(i, repr(chunk.content), repr(chunk.additional_kwargs.get("reasoning_content")),
               chunk.response_metadata.get("finish_reason"), chunk.usage_metadata, chunk.chunk_position)
-    assert reduce(add, chunks).response_metadata.get("backend") == backend.replace("_", "-")
+    first = chunks[0].response_metadata
+    if backend == "llama_server":
+        assert first["headers"]["server"] == "llama.cpp"
+    else:
+        assert first["headers"]["x-inference-backend"] == backend
+    assert first["backend"] == reduce(add, chunks).response_metadata["backend"] == backend.replace("_", "-")
     return events, chunks
 
 

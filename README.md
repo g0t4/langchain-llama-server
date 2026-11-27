@@ -58,6 +58,7 @@ Goals:
 - Explicitly work with llama-server, vllm, sglang
   - as needed, expand to any openai compat backend
 - ☑ Infer `backend` and store it in `response_metadata["backend"]`.
+  - The deployment can declare its name in the `X-Inference-Backend` HTTP response header. This takes precedence over `Server: llama.cpp` and payload inference. Headers are captured by default in `response_metadata["headers"]` on the first stream chunk or completed response. Set `include_response_headers=False` for payload-only inference.
   - `vllm` from its `vllm-` fingerprint or the combination of `usage` and `metrics`.
   - `sglang` from `sglext`, `timings.choices`, or a choice carrying `matched_stop`.
   - `llama-server` from its build fingerprint (e.g. `b12230-a4d4f2fd4`) or a `timings` object without `choices`.

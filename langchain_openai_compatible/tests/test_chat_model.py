@@ -9,16 +9,22 @@ from openai.types.chat import ChatCompletionChunk
 from langchain_openai_compatible import ChatOpenAICompatible
 
 
-def client_for(handler):
+def client_for(handler, **options):
     return ChatOpenAICompatible(
         base_url="http://backend.test/v1",
         model="test",
         api_key="",
         http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+        **options,
     )
 
 
-def test_stream_retains_backend_events_after_finish_and_repeated_usage():
+@pytest.mark.parametrize(("headers", "backend"), [
+    ({"X-Inference-Backend": "vllm", "Server": "llama.cpp"}, "vllm"),
+    ({"Server": "llama.cpp"}, "llama-server"),
+    ({}, "sglang"),
+])
+def test_stream_retains_backend_events_after_finish_and_repeated_usage(headers, backend):
     usage = {"prompt_tokens": 2, "completion_tokens": 1, "total_tokens": 3}
     events = [
         {"choices": [{"index": 0, "delta": {"reasoning": "think", "content": "hi"}}]},
@@ -35,7 +41,7 @@ def test_stream_retains_backend_events_after_finish_and_repeated_usage():
         assert json.loads(request.content)["stream_options"]["include_usage"]
         frames = [f"data: {json.dumps(event)}\n\n" for event in events]
         return httpx.Response(
-            200, headers={"Content-Type": "text/event-stream"},
+            200, headers={"Content-Type": "text/event-stream", **headers},
             text="".join(frames) + "data: [DONE]\n\n",
         )
 
@@ -46,6 +52,9 @@ def test_stream_retains_backend_events_after_finish_and_repeated_usage():
     assert captured == [ChatCompletionChunk.model_validate(event).model_dump() for event in events]
     merged = reduce(add, chunks)
     assert merged.response_metadata["raw_chunks"] == captured
+    assert merged.response_metadata["backend"] == backend
+    if headers:
+        assert chunks[0].response_metadata["backend"] == backend
     assert merged.additional_kwargs["reasoning_content"] == "think"
     assert merged.content == "hi"
 
@@ -62,10 +71,12 @@ def test_invoke_preserves_full_response_and_keeps_it_out_of_next_request():
 
     def respond(request):
         requests.append(json.loads(request.content))
-        return httpx.Response(200, json=payload)
+        return httpx.Response(200, headers={"X-Inference-Backend": "sglang"}, json=payload)
 
     model = client_for(respond)
     message = model.invoke("Hello")
+    assert message.response_metadata["backend"] == "sglang"
+    assert message.response_metadata["headers"]["x-inference-backend"] == "sglang"
     raw = message.response_metadata["raw_response"]
     assert raw["choices"][0]["message"]["reasoning_content"] == "think"
     assert raw["custom_metric"] == payload["custom_metric"]
@@ -73,6 +84,11 @@ def test_invoke_preserves_full_response_and_keeps_it_out_of_next_request():
     assert message.additional_kwargs["reasoning_content"] == "think"
     model.invoke([message, ("user", "Continue")])
     assert "custom_metric" not in json.dumps(requests[-1])
+
+    payload["system_fingerprint"] = "vllm-test"
+    metadata = client_for(respond, include_response_headers=False).invoke("Hello").response_metadata
+    assert "headers" not in metadata
+    assert metadata["backend"] == "vllm"
 
 
 @pytest.mark.parametrize(("fields", "expected"), [

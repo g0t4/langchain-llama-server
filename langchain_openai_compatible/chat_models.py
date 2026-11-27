@@ -18,7 +18,14 @@ def _preserve_reasoning(message: BaseMessage, fields: dict) -> None:
         message.additional_kwargs["reasoning_content"] = reasoning
 
 
-def _infer_backend(payload: dict) -> str | None:
+def _infer_backend(payload: dict, generation_info: dict | None) -> str | None:
+    headers = (generation_info or {}).get("headers", {})
+    declared = headers.get("x-inference-backend", "").strip().lower()
+    if declared:
+        return declared
+    if headers.get("server", "").lower() == "llama.cpp":
+        return "llama-server"
+
     fingerprint = payload.get("system_fingerprint") or ""
     if fingerprint.startswith("vllm-"):
         return "vllm"
@@ -42,7 +49,7 @@ def _infer_backend(payload: dict) -> str | None:
 def _label_stream_chunk(chunk: ChatGenerationChunk) -> bool:
     metadata = chunk.message.response_metadata
     for payload in metadata.get("raw_chunks", []):
-        if backend := _infer_backend(payload):
+        if backend := _infer_backend(payload, chunk.generation_info):
             metadata["backend"] = backend
             return True
     return False
@@ -50,6 +57,8 @@ def _label_stream_chunk(chunk: ChatGenerationChunk) -> bool:
 
 class ChatOpenAICompatible(BaseChatOpenAI):
     """OpenAI-compatible chat completions with the full parsed backend payload."""
+
+    include_response_headers: bool = True
 
     # LangChain concatenates custom string metadata when adding chunks.
     # Emit the label only on the first identifiable event of each request.
@@ -94,7 +103,7 @@ class ChatOpenAICompatible(BaseChatOpenAI):
     ) -> ChatResult:
         result = super()._create_chat_result(response, generation_info)
         payload = response if isinstance(response, dict) else response.model_dump()
-        backend = _infer_backend(payload)
+        backend = _infer_backend(payload, generation_info)
         for generation, choice in zip(result.generations, payload["choices"]):
             generation.message.response_metadata["raw_response"] = deepcopy(payload)
             if backend:
