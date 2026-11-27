@@ -176,3 +176,27 @@ milestones remain null. Older traces load with `client_timing=None`.
 The same timing object is available as `stream.client_timing` during iteration.
 These observations include SDK processing and time the consumer spends between
 pulls. Server-reported TTFT remains available through `calculate_stats()`.
+
+### Save a stopped or failed stream
+
+After the stream context exits, `stream.get_trace()` returns either the completed
+`AccumulatedCompletion` or an `InterruptedCompletion` with outcome `cancelled`
+or `error`. Both serialize with `model_dump_json()`. An early break, Ctrl+C, or
+async task cancellation closes the stream. A failed request preserves its exception
+type and message and propagates the original exception. Started requests retain
+their end time and elapsed time even if no backend event arrived.
+
+```python
+try:
+    with model.stream_completion(messages) as stream:
+        for chunk in stream:
+            render(chunk)
+finally:
+    trace_file.write(stream.get_trace().model_dump_json() + "\n")
+```
+
+For a runnable returned by `bind_tools()`, use
+`capture_completion(bound.stream(messages))` or
+`acapture_completion(bound.astream(messages))` to preserve the binding's request
+options. `calculate_stats()` also accepts interrupted traces and reports whatever
+measurements arrived before the interruption.

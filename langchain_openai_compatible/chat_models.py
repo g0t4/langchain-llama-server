@@ -1,6 +1,6 @@
 import re
 from collections.abc import AsyncIterator, Iterator
-from contextlib import aclosing, asynccontextmanager, closing, contextmanager
+from contextlib import AbstractAsyncContextManager, AbstractContextManager
 from copy import deepcopy
 from typing import Any
 
@@ -12,7 +12,7 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.outputs import ChatGenerationChunk, ChatResult
 from langchain_openai.chat_models.base import BaseChatOpenAI
 
-from .completion import AsyncCompletionStream, CompletionStream
+from .completion import AsyncCompletionStream, CompletionStream, acapture_completion, capture_completion
 
 
 def _preserve_reasoning(message: BaseMessage, fields: dict) -> None:
@@ -65,21 +65,15 @@ class ChatOpenAICompatible(BaseChatOpenAI):
 
     include_response_headers: bool = True
 
-    @contextmanager
     def stream_completion(
         self, input: LanguageModelInput, config: RunnableConfig | None = None, **kwargs: Any,
-    ) -> Iterator[CompletionStream]:
-        with closing(self.stream(input, config, **kwargs)) as chunks:
-            with closing(CompletionStream(chunks)) as stream:
-                yield stream
+    ) -> AbstractContextManager[CompletionStream]:
+        return capture_completion(self.stream(input, config, **kwargs))
 
-    @asynccontextmanager
-    async def astream_completion(
+    def astream_completion(
         self, input: LanguageModelInput, config: RunnableConfig | None = None, **kwargs: Any,
-    ) -> AsyncIterator[AsyncCompletionStream]:
-        async with aclosing(self.astream(input, config, **kwargs)) as chunks:
-            async with aclosing(AsyncCompletionStream(chunks)) as stream:
-                yield stream
+    ) -> AbstractAsyncContextManager[AsyncCompletionStream]:
+        return acapture_completion(self.astream(input, config, **kwargs))
 
     # LangChain concatenates custom string metadata when adding chunks.
     # Emit the label only on the first identifiable event of each request.

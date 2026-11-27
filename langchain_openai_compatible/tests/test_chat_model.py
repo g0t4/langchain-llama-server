@@ -179,6 +179,8 @@ def test_async_stream_error_retains_partial_trace():
                 async with model.astream_completion("Hello") as stream:
                     async for chunk in stream:
                         assert chunk.content == "hi"
+            assert stream.get_trace().outcome == "error"
+            assert stream.get_trace().error_type == "ReadError"
             assert len(stream.raw_chunks) == 1
             with pytest.raises(RuntimeError, match="exhausted"):
                 stream.get_final_completion()
@@ -215,3 +217,54 @@ def test_client_timing_starts_on_first_pull_and_preserves_event_offsets(monkeypa
     assert timing.started_at.utcoffset().total_seconds() == timing.ended_at.utcoffset().total_seconds() == 0
     assert AccumulatedCompletion.model_validate_json(completion.model_dump_json()) == completion
     assert AccumulatedCompletion.model_validate(completion.model_dump(exclude={"client_timing"})).client_timing is None
+
+
+@pytest.mark.parametrize("cause,outcome", [(None, "cancelled"), (KeyboardInterrupt, "cancelled"),
+                                          (ValueError, "error")])
+def test_serializable_interruption(cause, outcome):
+    from langchain_core.messages import AIMessageChunk
+    from langchain_openai_compatible import InterruptedCompletion, calculate_stats, capture_completion
+
+    def chunks():
+        yield AIMessageChunk(content="hi", response_metadata={
+            "raw_chunks": [{"usage": {"completion_tokens": 2}}],
+            "backend": "vllm", "headers": {"server": "uvicorn"},
+        })
+        if cause:
+            raise cause("stopped")
+
+    with capture_completion(chunks()) as stream:
+        next(stream)
+        if cause:
+            with pytest.raises(cause):
+                next(stream)
+    partial = InterruptedCompletion.model_validate_json(stream.get_trace().model_dump_json())
+    assert partial.outcome == outcome
+    assert partial.backend == "vllm" and partial.headers["server"] == "uvicorn"
+    assert partial.error_type == (cause.__name__ if cause else None)
+    assert partial.client_timing.ended_at and partial.client_timing.elapsed_ms >= 0
+    assert calculate_stats(partial).output.tokens == 2
+    with pytest.raises(RuntimeError):
+        stream.get_final_completion()
+
+
+def test_interruption_before_first_event():
+    from langchain_openai_compatible import capture_completion
+
+    def failing_request():
+        raise ConnectionError("connection refused")
+        yield
+
+    with capture_completion(failing_request()) as unused:
+        pass
+    assert unused.get_trace().outcome == "cancelled"
+    assert unused.get_trace().client_timing is None
+
+    with pytest.raises(ConnectionError):
+        with capture_completion(failing_request()) as failed:
+            next(failed)
+    trace = failed.get_trace()
+    assert trace.outcome == "error" and trace.raw_chunks == []
+    assert trace.error_message == "connection refused"
+    assert trace.client_timing.ended_at is not None
+    assert trace.client_timing.first_event_ms is None

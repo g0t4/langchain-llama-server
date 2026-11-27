@@ -5,7 +5,7 @@ from math import isfinite
 from langchain_core.messages import AIMessage
 from pydantic import BaseModel
 
-from .completion import AccumulatedCompletion
+from .completion import AccumulatedCompletion, InterruptedCompletion
 
 
 class InputStats(BaseModel):
@@ -71,17 +71,19 @@ def _draft(fields, drafted_key, accepted_key, rate_key=None, length_key=None):
     return None
 
 
-def calculate_stats(source: AccumulatedCompletion | AIMessage) -> CompletionStats:
+def calculate_stats(source: AccumulatedCompletion | InterruptedCompletion | AIMessage) -> CompletionStats:
     """Read the latest report of each kind. All calculations are request-local."""
-    if isinstance(source, AccumulatedCompletion):
-        message = source.message
+    if isinstance(source, InterruptedCompletion):
         events = source.raw_chunks
+    elif isinstance(source, AccumulatedCompletion):
+        message = source.message
+        events = source.raw_chunks or [message.response_metadata.get("raw_response", {})]
     else:
-        message = source
-        events = message.response_metadata.get("raw_chunks", [])
+        metadata = source.response_metadata
+        events = metadata.get("raw_chunks") or [metadata.get("raw_response", {})]
     reports = {}
     multiple_choices = False
-    for event in events or [message.response_metadata.get("raw_response", {})]:
+    for event in events:
         for key in ("usage", "metrics", "sglext", "timings"):
             if isinstance(event.get(key), dict):
                 reports[key] = event[key]
