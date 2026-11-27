@@ -51,13 +51,16 @@ def _infer_backend(payload: dict, generation_info: dict | None) -> str | None:
     return None
 
 
-def _label_stream_chunk(chunk: ChatGenerationChunk) -> bool:
+def _label_stream_chunk(chunk: ChatGenerationChunk, labeled: set[str]) -> None:
     metadata = chunk.message.response_metadata
     for payload in metadata.get("raw_chunks", []):
-        if backend := _infer_backend(payload, chunk.generation_info):
+        if "backend" not in labeled and (backend := _infer_backend(payload, chunk.generation_info)):
             metadata["backend"] = backend
-            return True
-    return False
+            labeled.add("backend")
+        model = payload.get("model")
+        if "model" not in labeled and isinstance(model, str) and model.strip():
+            metadata["model"] = model
+            labeled.add("model")
 
 
 class ChatOpenAICompatible(BaseChatOpenAI):
@@ -81,18 +84,18 @@ class ChatOpenAICompatible(BaseChatOpenAI):
         self, messages: list[BaseMessage], stop: list[str] | None = None,
         run_manager: CallbackManagerForLLMRun | None = None, **kwargs: Any,
     ) -> Iterator[ChatGenerationChunk]:
-        labeled = False
+        labeled: set[str] = set()
         for chunk in super()._stream(messages, stop=stop, run_manager=run_manager, **kwargs):
-            labeled = labeled or _label_stream_chunk(chunk)
+            _label_stream_chunk(chunk, labeled)
             yield chunk
 
     async def _astream(
         self, messages: list[BaseMessage], stop: list[str] | None = None,
         run_manager: AsyncCallbackManagerForLLMRun | None = None, **kwargs: Any,
     ) -> AsyncIterator[ChatGenerationChunk]:
-        labeled = False
+        labeled: set[str] = set()
         async for chunk in super()._astream(messages, stop=stop, run_manager=run_manager, **kwargs):
-            labeled = labeled or _label_stream_chunk(chunk)
+            _label_stream_chunk(chunk, labeled)
             yield chunk
 
     def _convert_chunk_to_generation_chunk(
@@ -119,8 +122,11 @@ class ChatOpenAICompatible(BaseChatOpenAI):
         result = super()._create_chat_result(response, generation_info)
         payload = response if isinstance(response, dict) else response.model_dump()
         backend = _infer_backend(payload, generation_info)
+        model = payload.get("model")
         for generation, choice in zip(result.generations, payload["choices"]):
             generation.message.response_metadata["raw_response"] = deepcopy(payload)
+            if isinstance(model, str) and model.strip():
+                generation.message.response_metadata["model"] = model
             if backend:
                 generation.message.response_metadata["backend"] = backend
             _preserve_reasoning(generation.message, choice["message"])

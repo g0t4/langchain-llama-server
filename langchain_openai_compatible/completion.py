@@ -41,6 +41,7 @@ class InterruptedCompletion(BaseModel):
     raw_chunks: list[dict]
     client_timing: ClientTiming | None
     backend: str | None = None
+    model: str | None = None
     headers: dict[str, str] | None = None
     error_type: str | None = None
     error_message: str | None = None
@@ -90,7 +91,7 @@ class _Accumulator:
         cancelled = error is None or isinstance(error, (GeneratorExit, CancelledError, KeyboardInterrupt))
         metadata = {}
         for part in self._parts:
-            for key in ("backend", "headers"):
+            for key in ("backend", "model", "headers"):
                 if key in part.response_metadata:
                     metadata[key] = part.response_metadata[key]
         self._result = InterruptedCompletion(

@@ -57,6 +57,7 @@ Goals:
   - no more coupling to a limited list of metric (and other) fields
 - Explicitly work with llama-server, vllm, sglang
   - as needed, expand to any openai compat backend
+- Store the server-reported model ID in `response_metadata["model"]` on JSON completions and the first stream event carrying a nonempty model. Interrupted traces expose it as `trace.model` when observed. The configured request alias may differ.
 - ☑ Infer `backend` and store it in `response_metadata["backend"]`.
   - The deployment can declare its name in the `X-Inference-Backend` HTTP response header. This takes precedence over `Server: llama.cpp` and payload inference. Headers are captured by default in `response_metadata["headers"]` on the first stream chunk or completed response. Set `include_response_headers=False` for payload-only inference.
   - `vllm` from its `vllm-` fingerprint or the combination of `usage` and `metrics`.

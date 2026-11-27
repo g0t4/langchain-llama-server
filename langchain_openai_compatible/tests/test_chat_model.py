@@ -52,6 +52,8 @@ def test_stream_retains_backend_events_after_finish_and_repeated_usage(headers, 
     assert captured == [ChatCompletionChunk.model_validate(event).model_dump() for event in events]
     merged = reduce(add, chunks)
     assert merged.response_metadata["raw_chunks"] == captured
+    assert [c.response_metadata["model"] for c in chunks if "model" in c.response_metadata] == ["test"]
+    assert merged.response_metadata["model"] == "test"
     assert merged.response_metadata["backend"] == backend
     if headers:
         assert chunks[0].response_metadata["backend"] == backend
@@ -75,6 +77,7 @@ def test_invoke_preserves_full_response_and_keeps_it_out_of_next_request():
 
     model = client_for(respond)
     message = model.invoke("Hello")
+    assert message.response_metadata["model"] == payload["model"]
     assert message.response_metadata["backend"] == "sglang"
     assert message.response_metadata["headers"]["x-inference-backend"] == "sglang"
     raw = message.response_metadata["raw_response"]
@@ -228,7 +231,7 @@ def test_serializable_interruption(cause, outcome):
     def chunks():
         yield AIMessageChunk(content="hi", response_metadata={
             "raw_chunks": [{"usage": {"completion_tokens": 2}}],
-            "backend": "vllm", "headers": {"server": "uvicorn"},
+            "backend": "vllm", "model": "served-id", "headers": {"server": "uvicorn"},
         })
         if cause:
             raise cause("stopped")
@@ -240,6 +243,7 @@ def test_serializable_interruption(cause, outcome):
                 next(stream)
     partial = InterruptedCompletion.model_validate_json(stream.get_trace().model_dump_json())
     assert partial.outcome == outcome
+    assert partial.model == "served-id"
     assert partial.backend == "vllm" and partial.headers["server"] == "uvicorn"
     assert partial.error_type == (cause.__name__ if cause else None)
     assert partial.client_timing.ended_at and partial.client_timing.elapsed_ms >= 0
