@@ -163,3 +163,16 @@ deployment, set `SGLANG_BASE_URL` and optionally `SGLANG_MODEL` (or use the
 `VLLM_` or `LLAMA_SERVER_` prefix). The assertions describe these deployments,
 including the custom SGLang timing extension. The short token budget exercises
 vLLM's length cutoff.
+
+### Client timing
+
+`completion.client_timing` records UTC `started_at` and `ended_at` timestamps
+and monotonic `elapsed_ms` from the first pull through natural stream exhaustion.
+`event_offsets_ms[i]` is when the client observed `raw_chunks[i]`.
+`first_event_ms`, `first_reasoning_ms`, and `first_answer_ms` distinguish the
+first backend event from the first nonempty reasoning and answer text. Missing
+milestones remain null. Older traces load with `client_timing=None`.
+
+The same timing object is available as `stream.client_timing` during iteration.
+These observations include SDK processing and time the consumer spends between
+pulls. Server-reported TTFT remains available through `calculate_stats()`.

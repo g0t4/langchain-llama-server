@@ -184,3 +184,34 @@ def test_async_stream_error_retains_partial_trace():
                 stream.get_final_completion()
 
     asyncio.run(run())
+
+
+def test_client_timing_starts_on_first_pull_and_preserves_event_offsets(monkeypatch):
+    from langchain_core.messages import AIMessageChunk
+    from langchain_openai_compatible import AccumulatedCompletion
+    from langchain_openai_compatible.completion import CompletionStream
+
+    ticks = iter([10, 12, 15, 18, 20, 25])
+    monkeypatch.setattr("langchain_openai_compatible.completion.monotonic_ns",
+                        lambda: next(ticks) * 1_000_000)
+    event = {"raw_chunks": [{"choices": []}]}
+    stream = CompletionStream(iter([
+        AIMessageChunk(content="", response_metadata=event),
+        AIMessageChunk(content="", additional_kwargs={"reasoning_content": "think"}, response_metadata=event),
+        AIMessageChunk(content="yes", response_metadata=event),
+        AIMessageChunk(content="", chunk_position="last"),
+    ]))
+    assert stream.client_timing is None
+    next(stream)
+    assert stream.client_timing.first_event_ms == 2
+    assert stream.client_timing.first_answer_ms is None
+    list(stream)
+    completion = stream.get_final_completion()
+    timing = completion.client_timing
+    assert timing.event_offsets_ms == [2, 5, 8]
+    assert timing.first_reasoning_ms == 5
+    assert timing.first_answer_ms == 8
+    assert timing.elapsed_ms == 15
+    assert timing.started_at.utcoffset().total_seconds() == timing.ended_at.utcoffset().total_seconds() == 0
+    assert AccumulatedCompletion.model_validate_json(completion.model_dump_json()) == completion
+    assert AccumulatedCompletion.model_validate(completion.model_dump(exclude={"client_timing"})).client_timing is None
