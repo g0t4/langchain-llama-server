@@ -111,3 +111,76 @@ def test_backend_inference(fields, expected):
         assert "backend" not in metadata
     else:
         assert metadata["backend"] == expected
+
+
+def test_accumulated_completion_with_fragmented_tool_call_and_usage_snapshots():
+    from langchain_openai_compatible import AccumulatedCompletion
+
+    def tool_delta(**fields):
+        return {"choices": [{"index": 0, "delta": fields}]}
+
+    def stats(total):
+        return {"choices": [], "usage": {
+            "prompt_tokens": 2, "completion_tokens": total - 2, "total_tokens": total,
+        }}
+
+    events = [
+        tool_delta(reasoning_content="need weather"),
+        tool_delta(tool_calls=[{"index": 0, "id": "call1", "type": "function",
+                                "function": {"name": "weather", "arguments": '{"city":'}}]),
+        tool_delta(tool_calls=[{"index": 0, "function": {"arguments": '"Austin"}'}}]),
+        {"choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}]},
+        stats(5), stats(6),
+    ]
+
+    def respond(request):
+        frames = [f"data: {json.dumps(event)}\n\n" for event in events]
+        return httpx.Response(200, headers={"X-Inference-Backend": "sglang",
+                                            "Content-Type": "text/event-stream"},
+                              text="".join(frames) + "data: [DONE]\n\n")
+
+    model = client_for(respond)
+    with model.stream_completion("Get the weather") as stream:
+        chunks = list(stream)
+    result = stream.get_final_completion()
+    assert result.message.tool_calls[0]["args"] == {"city": "Austin"}
+    assert result.message.additional_kwargs["reasoning_content"] == "need weather"
+    assert result.message.response_metadata["backend"] == "sglang"
+    assert result.message.response_metadata["finish_reason"] == "tool_calls"
+    assert result.message.usage_metadata["total_tokens"] == 6
+    assert result.raw_chunks == [raw for c in chunks for raw in c.response_metadata.get("raw_chunks", [])]
+    assert "raw_chunks" not in result.message.response_metadata
+    assert AccumulatedCompletion.model_validate_json(result.model_dump_json()) == result
+
+    with model.stream_completion("Get the weather") as partial:
+        next(partial)
+    assert len(partial.raw_chunks) == 1
+    with pytest.raises(RuntimeError, match="exhausted"):
+        partial.get_final_completion()
+
+
+def test_async_stream_error_retains_partial_trace():
+    import asyncio
+
+    class BrokenStream(httpx.AsyncByteStream):
+        async def __aiter__(self):
+            yield b'data: {"choices":[{"index":0,"delta":{"content":"hi"}}]}\n\n'
+            raise httpx.ReadError("lost stream")
+
+    async def run():
+        def respond(request):
+            return httpx.Response(200, headers={"Content-Type": "text/event-stream"},
+                                  stream=BrokenStream())
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as http:
+            model = ChatOpenAICompatible(base_url="http://backend.test/v1", model="test",
+                                         api_key="", http_async_client=http)
+            with pytest.raises(httpx.ReadError, match="lost stream"):
+                async with model.astream_completion("Hello") as stream:
+                    async for chunk in stream:
+                        assert chunk.content == "hi"
+            assert len(stream.raw_chunks) == 1
+            with pytest.raises(RuntimeError, match="exhausted"):
+                stream.get_final_completion()
+
+    asyncio.run(run())

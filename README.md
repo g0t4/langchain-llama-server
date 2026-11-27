@@ -73,12 +73,8 @@ Goals:
     - Steering/providing more context
 - A client ALSO often needs the full completion object once streaming is done
   - Why make clients combine SSEs into a chunk, we can do that HERE!
-  - ☐ Accumualte SSEs into the final chunk
-    - ☐ Emit accumulated result too?
-    - AIMessageChunk is already additive in several ways
-    - ☐ Review how additive works w.r.t. stats across SSEs
-      - not to standardize here
-      - just to capture and combine across SSEs
+  - ☑ Return an `AccumulatedCompletion` after streaming. Keep the backend events in
+    order and assemble the assistant message with the last reported cumulative usage.
 - ☐ Calculator for standardized stats:
   - reduce burden for majority of consumers to meaningfully display stats w/o duplicating calculation logic
   - TODO setup shared helper to _CALCULATE_ the standardized stats so we don't have to rely on a frozen projection
@@ -119,6 +115,27 @@ backend-specific fields. Adding chunks together retains those events in order.
 LangChain's synthetic final chunk has no backend event. For a non-streaming
 `invoke()`, read the complete parsed response from
 `message.response_metadata["raw_response"]`.
+
+### Save an accumulated completion
+
+```python
+with model.stream_completion("Hello", stream_usage=True) as stream:
+    for chunk in stream:
+        print(chunk.text, end="")
+    completion = stream.get_final_completion()
+
+trace_json = completion.model_dump_json()
+```
+
+`completion.message` is the assembled LangChain `AIMessage`, including reasoning,
+tool calls, headers, and backend identity when supplied. `completion.raw_chunks`
+holds the ordered parsed backend events once in the serialized trace.
+`AccumulatedCompletion.model_validate_json(trace_json)` reads it back.
+
+For async clients, use `async with model.astream_completion(...)` and `async for`.
+The final result becomes available when iteration runs to exhaustion. If the
+consumer breaks early or the request fails, `stream.raw_chunks` contains the
+events captured so far and `get_final_completion()` raises `RuntimeError`.
 
 ### Verify a hosted stream
 

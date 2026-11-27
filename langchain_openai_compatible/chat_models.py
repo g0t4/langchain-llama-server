@@ -1,13 +1,18 @@
 import re
 from collections.abc import AsyncIterator, Iterator
+from contextlib import aclosing, asynccontextmanager, closing, contextmanager
 from copy import deepcopy
 from typing import Any
 
 import openai
 from langchain_core.callbacks import AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun
+from langchain_core.language_models import LanguageModelInput
 from langchain_core.messages import BaseMessage
+from langchain_core.runnables import RunnableConfig
 from langchain_core.outputs import ChatGenerationChunk, ChatResult
 from langchain_openai.chat_models.base import BaseChatOpenAI
+
+from .completion import AsyncCompletionStream, CompletionStream
 
 
 def _preserve_reasoning(message: BaseMessage, fields: dict) -> None:
@@ -59,6 +64,22 @@ class ChatOpenAICompatible(BaseChatOpenAI):
     """OpenAI-compatible chat completions with the full parsed backend payload."""
 
     include_response_headers: bool = True
+
+    @contextmanager
+    def stream_completion(
+        self, input: LanguageModelInput, config: RunnableConfig | None = None, **kwargs: Any,
+    ) -> Iterator[CompletionStream]:
+        with closing(self.stream(input, config, **kwargs)) as chunks:
+            with closing(CompletionStream(chunks)) as stream:
+                yield stream
+
+    @asynccontextmanager
+    async def astream_completion(
+        self, input: LanguageModelInput, config: RunnableConfig | None = None, **kwargs: Any,
+    ) -> AsyncIterator[AsyncCompletionStream]:
+        async with aclosing(self.astream(input, config, **kwargs)) as chunks:
+            async with aclosing(AsyncCompletionStream(chunks)) as stream:
+                yield stream
 
     # LangChain concatenates custom string metadata when adding chunks.
     # Emit the label only on the first identifiable event of each request.
