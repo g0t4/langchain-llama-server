@@ -38,6 +38,67 @@ This chat model targets in-process hosting using llama.cpp. It doesn't support l
 Use this sibling client for SGLang, vLLM, or llama-server chat completions.
 Pass backend-specific request options through `extra_body`.
 
+This combines what I learned building an dusing the first ChatLlamaServer.
+I really find myself wanting the original input chunks attached to the langchain output chunks.
+So that's what codex and I setup here!
+
+Goals:
+- Do the heavy lifting in ONE spot for all my python clients!
+  - leverage best of both worlds:
+    - original server chunks (SSEs)
+    - langchain projections, i.e. `AIMessageChunk`
+- Project standardized reasoning onto `AIMessageChunk`
+- Preserve metrics
+  - `llama-server`'s `timings` and `usage`
+  - `sglang`'s `usage`, `timings.choices` + my own `sglext` (sglang extension)
+  - `vllm`'s `usage` and `metrics`
+  - AND other backends as needed
+  - NOTE all three provide openai compatible `usage`
+  - no more coupling to a limited list of metric (and other) fields
+- Explicitly work with llama-server, vllm, sglang
+  - as needed, expand to any openai compat backend
+- ☐ Infer `backend` and store that in `response_metadata["backend"]`
+- A client often needs `SSE`s for making an interactive, progress focused experience for consumers:
+  - Users need to see that a model is working
+  - Users need to see what the model is doing
+  - Users need to be able to stop work that is wrong for any number of reasons:
+    - Model misunderstood
+    - Stupid tool calling decisions
+    - Loops (reasoning, tool use, etc)
+    - Steering/providing more context
+- A client ALSO often needs the full completion object once streaming is done
+  - Why make clients combine SSEs into a chunk, we can do that HERE!
+  - ☐ Accumualte SSEs into the final chunk
+    - ☐ Emit accumulated result too?
+    - AIMessageChunk is already additive in several ways
+    - ☐ Review how additive works w.r.t. stats across SSEs
+      - not to standardize here
+      - just to capture and combine across SSEs
+- ☐ Calculator for standardized stats:
+  - reduce burden for majority of consumers to meaningfully display stats w/o duplicating calculation logic
+  - TODO setup shared helper to _CALCULATE_ the standardized stats so we don't have to rely on a frozen projection
+  - Standard set first idea:
+    ```yaml
+    input:
+      cached: 2000
+      tokens: 1000
+      tokens_per_second: 10500
+    output:
+      tokens: 1000
+      tokens_per_second: 250
+      reasoning_tokens: 800
+      final_tokens: 200
+      draft:
+        drafted_tokens: 100 
+        accepted_tokens: 80
+        mean_accept_length: 5.61
+    ```
+- DOCUMENT:
+  - with live tests against backends
+  - what each backend returns in each scenario
+  - what comes out of our langchain client in each scenario too
+  - how we combine input chunk preservation across SSEs
+
 ```python
 from langchain_openai_compatible import ChatOpenAICompatible
 
