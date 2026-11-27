@@ -80,6 +80,7 @@ def stream(backend, usage, **extra_body):
     for i, chunk in enumerate(chunks):
         print(i, repr(chunk.content), repr(chunk.additional_kwargs.get("reasoning_content")),
               chunk.response_metadata.get("finish_reason"), chunk.usage_metadata, chunk.chunk_position)
+    assert reduce(add, chunks).response_metadata.get("backend") == backend.replace("_", "-")
     return events, chunks
 
 

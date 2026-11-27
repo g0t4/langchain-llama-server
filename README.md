@@ -57,7 +57,11 @@ Goals:
   - no more coupling to a limited list of metric (and other) fields
 - Explicitly work with llama-server, vllm, sglang
   - as needed, expand to any openai compat backend
-- ☐ Infer `backend` and store that in `response_metadata["backend"]`
+- ☑ Infer `backend` and store it in `response_metadata["backend"]`.
+  - `vllm` from its `vllm-` fingerprint or the combination of `usage` and `metrics`.
+  - `sglang` from `sglext`, `timings.choices`, or a choice carrying `matched_stop`.
+  - `llama-server` from its build fingerprint (e.g. `b12230-a4d4f2fd4`) or a `timings` object without `choices`.
+  - The first identifiable stream event carries the label, so adding the chunks retains it once. Unrecognized responses omit the key.
 - A client often needs `SSE`s for making an interactive, progress focused experience for consumers:
   - Users need to see that a model is working
   - Users need to see what the model is doing

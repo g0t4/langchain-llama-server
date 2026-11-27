@@ -3,6 +3,7 @@ from functools import reduce
 from operator import add
 
 import httpx
+import pytest
 from openai.types.chat import ChatCompletionChunk
 
 from langchain_openai_compatible import ChatOpenAICompatible
@@ -72,3 +73,25 @@ def test_invoke_preserves_full_response_and_keeps_it_out_of_next_request():
     assert message.additional_kwargs["reasoning_content"] == "think"
     model.invoke([message, ("user", "Continue")])
     assert "custom_metric" not in json.dumps(requests[-1])
+
+
+@pytest.mark.parametrize(("fields", "expected"), [
+    ({"system_fingerprint": "vllm-test"}, "vllm"),
+    ({"usage": {}, "metrics": {}}, "vllm"),
+    ({"timings": {"choices": []}}, "sglang"),
+    ({"sglext": {}}, "sglang"),
+    ({"timings": {"prompt_n": 1}}, "llama-server"),
+    ({"usage": {}}, None),
+    ({"system_fingerprint": "fp_other"}, None),
+])
+def test_backend_inference(fields, expected):
+    model = client_for(lambda request: None)
+    result = model._create_chat_result({
+        "choices": [{"message": {"role": "assistant", "content": "hi"}}],
+        **fields,
+    })
+    metadata = result.generations[0].message.response_metadata
+    if expected is None:
+        assert "backend" not in metadata
+    else:
+        assert metadata["backend"] == expected
