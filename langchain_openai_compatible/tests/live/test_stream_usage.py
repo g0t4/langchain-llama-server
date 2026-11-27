@@ -13,7 +13,7 @@ import httpx
 import pytest
 from openai.types.chat import ChatCompletionChunk
 
-from langchain_openai_compatible import ChatOpenAICompatible
+from langchain_openai_compatible import AccumulatedCompletion, ChatOpenAICompatible, calculate_stats
 
 
 pytestmark = pytest.mark.skipif(os.getenv("LIVE_CHAT") != "1", reason="set LIVE_CHAT=1")
@@ -66,10 +66,21 @@ def stream(backend, usage, **extra_body):
             base_url=url, model=os.getenv(f"{prefix}_MODEL", ""), api_key="",
             http_client=http, timeout=30, max_retries=0,
         )
-        chunks = list(client.stream(
+        with client.stream_completion(
             "Count from 1 to 100.", max_tokens=16, stream_usage=usage,
             extra_body={"chat_template_kwargs": {"enable_thinking": False}, **extra_body},
-        ))
+        ) as stream_handle:
+            chunks = list(stream_handle)
+        saved = stream_handle.get_final_completion().model_dump_json()
+
+    stats = calculate_stats(AccumulatedCompletion.model_validate_json(saved))
+    if usage or backend == "llama_server":
+        assert stats.input.tokens > 0
+        assert stats.output.tokens > 0
+        assert stats.output.tokens_per_second > 0
+    else:
+        assert stats.output.tokens is None
+        assert stats.output.tokens_per_second is None
 
     print(f"\n{backend} {url} | model={events[0].get('model') if events else '?'} | stream_usage={usage}")
     print("SSE   delta fields             finish   diagnostics")

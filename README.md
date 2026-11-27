@@ -75,25 +75,7 @@ Goals:
   - Why make clients combine SSEs into a chunk, we can do that HERE!
   - ☑ Return an `AccumulatedCompletion` after streaming. Keep the backend events in
     order and assemble the assistant message with the last reported cumulative usage.
-- ☐ Calculator for standardized stats:
-  - reduce burden for majority of consumers to meaningfully display stats w/o duplicating calculation logic
-  - TODO setup shared helper to _CALCULATE_ the standardized stats so we don't have to rely on a frozen projection
-  - Standard set first idea:
-    ```yaml
-    input:
-      cached: 2000
-      tokens: 1000
-      tokens_per_second: 10500
-    output:
-      tokens: 1000
-      tokens_per_second: 250
-      reasoning_tokens: 800
-      final_tokens: 200
-      draft:
-        drafted_tokens: 100 
-        accepted_tokens: 80
-        mean_accept_length: 5.61
-    ```
+- ☑ Calculate standardized stats on demand from a completion or saved trace.
 - DOCUMENT:
   - with live tests against backends
   - what each backend returns in each scenario
@@ -136,6 +118,34 @@ For async clients, use `async with model.astream_completion(...)` and `async for
 The final result becomes available when iteration runs to exhaustion. If the
 consumer breaks early or the request fails, `stream.raw_chunks` contains the
 events captured so far and `get_final_completion()` raises `RuntimeError`.
+
+### Calculate standardized stats
+
+```python
+from langchain_openai_compatible import AccumulatedCompletion, calculate_stats
+
+stats = calculate_stats(completion)  # also accepts the AIMessage returned by invoke()
+print(stats.input.cached_tokens, stats.output.tokens_per_second)
+replayed = calculate_stats(AccumulatedCompletion.model_validate_json(trace_json))
+```
+
+The calculator reads the last non-null report of each kind independently, so
+usage snapshots count once and diagnostics on separate events survive. Values of
+`None` mean unavailable. Reported zeros survive. Calculations run on demand,
+including after loading an older trace.
+
+| Field | Meaning |
+|---|---|
+| `input.tokens`, `cached_tokens` | Total prompt tokens and the subset served from cache. llama-server can supply both through timings alone. |
+| `input.tokens_per_second` | Prompt processing throughput. llama-server reports it directly. SGLang uses uncached tokens divided by the forward-entry to prefill-finished interval. |
+| `output.tokens_per_second` | Decode throughput. llama-server and SGLang report it directly. For vLLM use 1000 divided by mean inter-token latency in milliseconds. |
+| `output.tokens`, `reasoning_tokens`, `non_reasoning_tokens` | Output total, reported reasoning count, and their difference when valid. Non-reasoning output can include tool calls. |
+| `output.draft` | Drafted and accepted token counts, acceptance rate (fraction), and reported mean acceptance length. A reported rate takes precedence over a ratio derived from counts. |
+| `time_to_first_token_ms`, `queue_ms` | Server-reported TTFT and queue time, converted to milliseconds. |
+
+With multiple choices the calculator exposes request-wide usage and omits
+choice-specific performance statistics. A plain OpenAI-compatible usage report
+also works without a recognized backend.
 
 ### Verify a hosted stream
 
