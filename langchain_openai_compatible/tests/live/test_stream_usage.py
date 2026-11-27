@@ -73,7 +73,14 @@ def stream(backend, usage, **extra_body):
             chunks = list(stream_handle)
         saved = stream_handle.get_final_completion().model_dump_json()
 
-    stats = calculate_stats(AccumulatedCompletion.model_validate_json(saved))
+    completion = AccumulatedCompletion.model_validate_json(saved)
+    model = events[0]["model"]
+    assert isinstance(model, str) and model.strip()
+    assert all(event.get("model") == model for event in events)
+    assert chunks[0].response_metadata["model"] == model
+    assert completion.message.response_metadata["model"] == model
+
+    stats = calculate_stats(completion)
     if usage or backend == "llama_server":
         assert stats.input.tokens > 0
         assert stats.output.tokens > 0
