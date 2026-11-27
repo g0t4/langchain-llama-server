@@ -32,3 +32,24 @@ Similar to other server integrations:
 The `langchain_community` package provides [`ChatLlamaCpp`](https://github.com/langchain-ai/langchain-community/blob/main/libs/community/langchain_community/chat_models/llamacpp.py#L61)? 
 This chat model targets in-process hosting using llama.cpp. It doesn't support llama-server for remote hosting.
 
+
+## ChatOpenAICompatible
+
+Use this sibling client for SGLang, vLLM, or llama-server chat completions.
+Pass backend-specific request options through `extra_body`.
+
+```python
+from langchain_openai_compatible import ChatOpenAICompatible
+
+model = ChatOpenAICompatible(base_url="http://localhost:8000/v1", model="my-model", api_key="")
+for chunk in model.stream("Hello", stream_usage=True):
+    for event in chunk.response_metadata.get("raw_chunks", []):
+        print(event)
+```
+
+Each backend message chunk carries a one-element `raw_chunks` list containing
+the full parsed input to the LangChain converter, including SDK defaults and
+backend-specific fields. Adding chunks together retains those events in order.
+LangChain's synthetic final chunk has no backend event. For a non-streaming
+`invoke()`, read the complete parsed response from
+`message.response_metadata["raw_response"]`.
