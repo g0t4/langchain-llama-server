@@ -53,3 +53,20 @@ backend-specific fields. Adding chunks together retains those events in order.
 LangChain's synthetic final chunk has no backend event. For a non-streaming
 `invoke()`, read the complete parsed response from
 `message.response_metadata["raw_response"]`.
+
+### Verify a hosted stream
+
+The [live stream tests](langchain_openai_compatible/tests/live/test_stream_usage.py)
+document the event order observed on the three configured hosts. Each case checks
+the server's SSE payloads first, then checks LangChain's messages from the same
+request. Run one case with output visible to compare the two sequences by index:
+
+```sh
+LIVE_CHAT=1 pytest -q -s langchain_openai_compatible/tests/live -k sglang_with_usage
+```
+
+Drop `-k sglang_with_usage` to run all six cases. To point a case at another
+deployment, set `SGLANG_BASE_URL` and optionally `SGLANG_MODEL` (or use the
+`VLLM_` or `LLAMA_SERVER_` prefix). The assertions describe these deployments,
+including the custom SGLang timing extension. The short token budget exercises
+vLLM's length cutoff.
