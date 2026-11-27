@@ -42,7 +42,7 @@ def print_indented(obj, level: int = 1):
     rich.print(Padding(what, (0, 0, 0, 4 * level)))
 
 
-def _preserve_response_diagnostics(message, response):
+def _preserve_response_diagnostics_on_response_metadata(message, response):
     # Response metadata stays out of subsequent inference input.
     for field in ("metrics", "timings", "sglext", "usage"):
         value = response.get(field) if isinstance(response, dict) else getattr(response, field, None)
@@ -102,7 +102,7 @@ class ChatLlamaServer(BaseChatOpenAI):
     ) -> ChatResult:
         chat_result = super()._create_chat_result(response, generation_info)
         for generation in chat_result.generations:
-            _preserve_response_diagnostics(generation.message, response)
+            _preserve_response_diagnostics_on_response_metadata(generation.message, response)
             # TODO? message.response_metadata["backend"] = "?"
 
         if self.enable_tracking_input_chunks:
@@ -175,7 +175,7 @@ class ChatLlamaServer(BaseChatOpenAI):
             return None
 
         message = generation.message
-        _preserve_response_diagnostics(message, chunk)
+        _preserve_response_diagnostics_on_response_metadata(message, chunk)
         if message.response_metadata:
             message.response_metadata["model_provider"] = "llama_server"
         # TODO? message.response_metadata["backend"] = "?"
